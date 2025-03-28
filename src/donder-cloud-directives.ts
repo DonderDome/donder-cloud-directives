@@ -123,22 +123,37 @@ export class BoilerplateCard extends LitElement {
 
   private async _createDirective(): Promise<void> {
     console.log("Creating directive");
-    // if (!this._newMessage.trim()) return;
-
     try {
-      // this._loading = true;
-      // this._error = undefined;
-
-      const response = await this.hass.callWS({
+      const response = await this.hass.callWS<{ success: boolean }>({
         type: "donder_cloud/create_directive",
         message: "if my left batcave shutters are open, open all batcave shutters",
       });
 
-      console.log(response);
-    } catch (err) {
+      console.log("Directive creation response:", response);
+      
+      if (response.success) {
+        // Show success notification
+        this.hass.callService("persistent_notification", "create", {
+          title: "Donder Cloud",
+          message: "Directive created successfully",
+          notification_id: "donder_cloud_success",
+        });
+      } else {
+        // Show error notification
+        this.hass.callService("persistent_notification", "create", {
+          title: "Donder Cloud",
+          message: "Failed to create directive",
+          notification_id: "donder_cloud_error",
+        });
+      }
+    } catch (err: unknown) {
       console.error("Error creating directive:", err);
-    } finally {
-
+      // Show error notification
+      this.hass.callService("persistent_notification", "create", {
+        title: "Donder Cloud",
+        message: `Error creating directive: ${err instanceof Error ? err.message : String(err)}`,
+        notification_id: "donder_cloud_error",
+      });
     }
   }
 
