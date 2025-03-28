@@ -120,6 +120,26 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
+  private async _createDirective(): Promise<void> {
+    // if (!this._newMessage.trim()) return;
+
+    try {
+      // this._loading = true;
+      // this._error = undefined;
+
+      const response = await this.hass.callWS({
+        type: "donder_cloud/create_directive",
+        message: "if my left batcave shutters are open, open all batcave shutters",
+      });
+
+      console.log(response);
+    } catch (err) {
+      console.error("Error creating directive:", err);
+    } finally {
+
+    }
+  }
+
   protected render(): TemplateResult | void {
     /*
       ## INTERFACE
@@ -150,7 +170,9 @@ export class BoilerplateCard extends LitElement {
         tabindex="0"
         .label=${`Boilerplate: ${this.config || 'No Entity Defined'}`}
       >
-        <div class='donder-cloud-directives'>It's the template!</div>
+        <div class='donder-cloud-directives'>
+          <button @click=${this._createDirective}>Create Directive</button>
+        </div>
       </ha-card>
     `;
   }

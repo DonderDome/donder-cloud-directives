@@ -44,6 +44,7 @@
   },
   "scripts": {
     "start": "rollup -c rollup.config.dev.js --watch",
+    "deploy": "npm run build && git add . && git commit -m 'Deploy' && git push",
     "build": "npm run lint && npm run rollup",
     "lint": "eslint src/*.ts",
     "rollup": "rollup -c"
