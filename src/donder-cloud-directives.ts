@@ -76,6 +76,7 @@ export class BoilerplateCard extends LitElement {
   }
 
   private _handleAction(ev: ActionHandlerEvent): void {
+    console.log("Handling action");
     if (this.hass && this.config && ev.detail.action) {
       handleAction(this, this.hass, this.config, ev.detail.action);
     }
@@ -121,6 +122,7 @@ export class BoilerplateCard extends LitElement {
   }
 
   private async _createDirective(): Promise<void> {
+    console.log("Creating directive");
     // if (!this._newMessage.trim()) return;
 
     try {
@@ -171,7 +173,7 @@ export class BoilerplateCard extends LitElement {
         .label=${`Boilerplate: ${this.config || 'No Entity Defined'}`}
       >
         <div class='donder-cloud-directives'>
-          <button @click=${this._createDirective}>Create Directive</button>
+          <button @click=${this._createDirective}>${`Create Directive: ${CARD_VERSION}`}</button>
         </div>
       </ha-card>
     `;
