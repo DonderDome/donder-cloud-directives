@@ -20,28 +20,28 @@ import {
 import { CARD_VERSION } from './constants';
 import './editor';
 
-import type { BoilerplateCardConfig } from './types';
+import type { DonderCloudDirectivesConfig } from './types';
 import { actionHandler } from './action-handler-directive';
 
 /* eslint no-console: 0 */
 console.info(
-  `%c  JARVIS-WIDGET-TEMPLATE \n%c  version: ${CARD_VERSION}  `,
+  `%c  DONDER-CLOUD-DIRECTIVES \n%c  version: ${CARD_VERSION}  `,
   'color: orange; font-weight: bold; background: black',
   'color: white; font-weight: bold; background: dimgray',
 );
 
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  type: 'jarvis-widget-template',
-  name: 'Boilerplate Card',
-  description: 'A template custom card for you to create something awesome',
+  type: 'donder-cloud-directives',
+  name: 'Donder Cloud Directives',
+  description: 'A custom card for you to create something awesome',
 });
 
 export class BoilerplateCard extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     // REPLACE "jarvis-widget-template" with widget name, everywhere in the project
     // REPLACE the file name with the actual widget name
-    return document.createElement('jarvis-widget-template-editor');
+    return document.createElement('donder-cloud-directives-editor');
   }
 
   public static getStubConfig(): Record<string, unknown> {
@@ -49,9 +49,9 @@ export class BoilerplateCard extends LitElement {
   }
 
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @state() private config!: BoilerplateCardConfig;
+  @state() private config!: DonderCloudDirectivesConfig;
 
-  public setConfig(config: BoilerplateCardConfig): void {
+  public setConfig(config: DonderCloudDirectivesConfig): void {
     // TODO Check for required fields and that they are of the proper format
     if (!config) {
       throw new Error('Invalid configuration');
@@ -103,11 +103,11 @@ export class BoilerplateCard extends LitElement {
   static get styles(): CSSResultGroup {
     return css`
       /* REPLACE "jarvis-widget-template" with actual widget name */
-      .type-custom-jarvis-widget-template {
+      .type-custom-donder-cloud-directives {
         height: 100%;
         width: 100%;
       }
-      .jarvis-widget {
+      .donder-cloud-directives {
         height: 100%;
         width: 100%;
         position: absolute;
@@ -150,10 +150,10 @@ export class BoilerplateCard extends LitElement {
         tabindex="0"
         .label=${`Boilerplate: ${this.config || 'No Entity Defined'}`}
       >
-        <div class='jarvis-widget'>It's the template!</div>
+        <div class='donder-cloud-directives'>It's the template!</div>
       </ha-card>
     `;
   }
 }
 
-customElements.define("jarvis-widget-template", BoilerplateCard);
+customElements.define("donder-cloud-directives", BoilerplateCard);

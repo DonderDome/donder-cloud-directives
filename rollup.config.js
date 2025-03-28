@@ -22,7 +22,7 @@ const plugins = [
   nodeResolve({}),
   commonjs(),
   typescript(),
-  json(),
+  json(),   
   babel({
     exclude: 'node_modules/**',
   }),
@@ -32,7 +32,7 @@ const plugins = [
 
 export default [
   {
-    input: 'src/jarvis-widget-template.ts',
+    input: 'src/donder-cloud-directives.ts',
     output: {
       dir: 'dist',
       format: 'es',

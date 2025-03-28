@@ -2,7 +2,7 @@
 import { LitElement, html, TemplateResult, css, CSSResultGroup } from 'lit';
 import { HomeAssistant, fireEvent, LovelaceCardEditor, ActionConfig } from 'custom-card-helpers';
 
-import { BoilerplateCardConfig } from './types';
+import { DonderCloudDirectivesConfig } from './types';
 import { customElement, property, state } from 'lit/decorators';
 
 const options = {
@@ -46,15 +46,15 @@ const options = {
   },
 };
 
-@customElement('jarvis-widget-template-editor')
+@customElement('donder-cloud-directives-editor')
 export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: HomeAssistant;
-  @state() private _config?: BoilerplateCardConfig;
+  @state() private _config?: DonderCloudDirectivesConfig;
   @state() private _toggle?: boolean;
   @state() private _helpers?: any;
   private _initialized = false;
 
-  public setConfig(config: BoilerplateCardConfig): void {
+  public setConfig(config: DonderCloudDirectivesConfig): void {
     this._config = config;
 
     this.loadCardHelpers();

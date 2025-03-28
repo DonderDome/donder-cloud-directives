@@ -163,15 +163,15 @@ class ActionHandler extends HTMLElement implements ActionHandler {
 }
 
 // DONE You need to replace all instances of "action-handler-jarvis-widget-template" with "action-handler-<your card name>"
-customElements.define('action-handler-jarvis-widget-template', ActionHandler);
+customElements.define('action-handler-donder-cloud-directives', ActionHandler);
 
 const getActionHandler = (): ActionHandler => {
   const body = document.body;
-  if (body.querySelector('action-handler-jarvis-widget-template')) {
-    return body.querySelector('action-handler-jarvis-widget-template') as ActionHandler;
+  if (body.querySelector('action-handler-donder-cloud-directives')) {
+    return body.querySelector('action-handler-donder-cloud-directives') as ActionHandler;
   }
 
-  const actionhandler = document.createElement('action-handler-jarvis-widget-template');
+  const actionhandler = document.createElement('action-handler-donder-cloud-directives');
   body.appendChild(actionhandler);
 
   return actionhandler as ActionHandler;
