@@ -7,7 +7,7 @@ import {
   PropertyValues,
   CSSResultGroup,
 } from 'lit';
-import { property, state } from "lit/decorators";
+import { state } from "lit/decorators";
 import {
   HomeAssistant,
   hasConfigOrEntityChanged,
@@ -23,6 +23,19 @@ import './editor';
 import type { DonderCloudDirectivesConfig } from './types';
 import { actionHandler } from './action-handler-directive';
 
+interface Directive {
+  id: string;
+  message: string;
+  status: 'success' | 'warning' | 'error';
+  scenario_id: string;
+  created_at: string;
+}
+
+interface EditingDirective {
+  id: string;
+  message: string;
+}
+
 /* eslint no-console: 0 */
 console.info(
   `%c  DONDER-CLOUD-DIRECTIVES \n%c  version: ${CARD_VERSION}  `,
@@ -34,7 +47,7 @@ console.info(
 (window as any).customCards.push({
   type: 'donder-cloud-directives',
   name: 'Donder Cloud Directives',
-  description: 'A custom card for you to create something awesome',
+  description: 'A custom card for managing directives',
 });
 
 export class BoilerplateCard extends LitElement {
@@ -48,8 +61,12 @@ export class BoilerplateCard extends LitElement {
     return {};
   }
 
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @state() public hass!: HomeAssistant;
   @state() private config!: DonderCloudDirectivesConfig;
+  @state() private directives: Directive[] = [];
+  @state() private newDirectiveMessage = '';
+  @state() private editingDirective: EditingDirective | null = null;
+  @state() private deletingDirectiveId: string | null = null;
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
     // TODO Check for required fields and that they are of the proper format
@@ -62,7 +79,7 @@ export class BoilerplateCard extends LitElement {
     }
 
     this.config = {
-      name: 'Boilerplate',
+      name: 'Donder Cloud Directives',
       ...config,
     };
   }
@@ -101,6 +118,120 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
+  private async _fetchDirectives(): Promise<void> {
+    try {
+      const response = await this.hass.callWS<{ success: boolean; directives: Directive[] }>({
+        type: "donder_cloud/get_directives",
+      });
+
+      if (response.success) {
+        this.directives = response.directives;
+      }
+    } catch (err) {
+      console.error("Error fetching directives:", err);
+      this._showNotification("Error fetching directives", "error");
+    }
+  }
+
+  private async _createDirective(): Promise<void> {
+    if (!this.newDirectiveMessage.trim()) {
+      this._showNotification("Please enter a directive message", "warning");
+      return;
+    }
+
+    try {
+      const response = await this.hass.callWS<{ success: boolean; result: any; directives: Directive[] }>({
+        type: "donder_cloud/create_directive",
+        message: this.newDirectiveMessage.trim(),
+      });
+
+      if (response.success) {
+        this.directives = response.directives;
+        this.newDirectiveMessage = '';
+        this._showNotification("Directive created successfully", "success");
+      }
+    } catch (err) {
+      console.error("Error creating directive:", err);
+      this._showNotification("Error creating directive", "error");
+    }
+  }
+
+  private async _updateDirective(): Promise<void> {
+    if (!this.editingDirective || !this.editingDirective.message.trim()) {
+      this._showNotification("Please enter a directive message", "warning");
+      return;
+    }
+
+    try {
+      const response = await this.hass.callWS<{ success: boolean; result: any }>({
+        type: "donder_cloud/update_directive",
+        directive_id: this.editingDirective.id,
+        message: this.editingDirective.message.trim(),
+      });
+
+      if (response.success) {
+        await this._fetchDirectives();
+        this.editingDirective = null;
+        this._showNotification("Directive updated successfully", "success");
+      }
+    } catch (err) {
+      console.error("Error updating directive:", err);
+      this._showNotification("Error updating directive", "error");
+    }
+  }
+
+  private async _deleteDirective(directiveId: string): Promise<void> {
+    try {
+      const response = await this.hass.callWS<{ success: boolean; result: any }>({
+        type: "donder_cloud/delete_directive",
+        directive_id: directiveId,
+      });
+
+      if (response.success) {
+        await this._fetchDirectives();
+        this.deletingDirectiveId = null;
+        this._showNotification("Directive deleted successfully", "success");
+      }
+    } catch (err) {
+      console.error("Error deleting directive:", err);
+      this._showNotification("Error deleting directive", "error");
+    }
+  }
+
+  private _showNotification(message: string, type: 'success' | 'error' | 'warning'): void {
+    this.hass.callService("persistent_notification", "create", {
+      title: "Donder Cloud",
+      message,
+      notification_id: `donder_cloud_${type}`,
+    });
+  }
+
+  private _getStatusIcon(status: string): string {
+    switch (status) {
+      case 'success':
+        return 'mdi:check-circle';
+      case 'warning':
+        return 'mdi:alert-circle';
+      case 'error':
+        return 'mdi:close-circle';
+      default:
+        return 'mdi:help-circle';
+    }
+  }
+
+  private _getStatusClass(status: string): string {
+    switch (status) {
+      case 'success':
+        return 'status-success';
+      case 'warning':
+        return 'status-warning';
+      case 'error':
+        return 'status-error';
+      default:
+        return 'status-unknown';
+    }
+  }
+
   static get styles(): CSSResultGroup {
     return css`
       /* REPLACE "jarvis-widget-template" with actual widget name */
@@ -118,43 +249,59 @@ export class BoilerplateCard extends LitElement {
         box-sizing: border-box;
         border: 1px solid #fff;
       }
+      .directive-list {
+        margin-bottom: 20px;
+      }
+      .directive-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .directive-content {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+      .directive-message {
+        margin-bottom: 5px;
+      }
+      .directive-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .status-success {
+        color: var(--success-color);
+      }
+      .status-warning {
+        color: var(--warning-color);
+      }
+      .status-error {
+        color: var(--error-color);
+      }
+      .status-unknown {
+        color: var(--secondary-text-color);
+      }
+      .new-directive {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .new-directive input {
+        flex-grow: 1;
+      }
+      .edit-mode input {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .confirm-delete {
+        display: flex;
+        gap: 10px;
+      }
     `;
   }
 
-  private async _createDirective(): Promise<void> {
-    console.log("Creating directive");
-    try {
-      const response = await this.hass.callWS<{ success: boolean }>({
-        type: "donder_cloud/create_directive",
-        message: "if my left batcave shutters are open, open all batcave shutters",
-      });
-
-      console.log("Directive creation response:", response);
-      
-      if (response.success) {
-        // Show success notification
-        this.hass.callService("persistent_notification", "create", {
-          title: "Donder Cloud",
-          message: "Directive created successfully",
-          notification_id: "donder_cloud_success",
-        });
-      } else {
-        // Show error notification
-        this.hass.callService("persistent_notification", "create", {
-          title: "Donder Cloud",
-          message: "Failed to create directive",
-          notification_id: "donder_cloud_error",
-        });
-      }
-    } catch (err: unknown) {
-      console.error("Error creating directive:", err);
-      // Show error notification
-      this.hass.callService("persistent_notification", "create", {
-        title: "Donder Cloud",
-        message: `Error creating directive: ${err instanceof Error ? err.message : String(err)}`,
-        notification_id: "donder_cloud_error",
-      });
-    }
+  protected firstUpdated(): void {
+    this._fetchDirectives();
   }
 
   protected render(): TemplateResult | void {
@@ -188,7 +335,81 @@ export class BoilerplateCard extends LitElement {
         .label=${`Boilerplate: ${this.config || 'No Entity Defined'}`}
       >
         <div class='donder-cloud-directives'>
-          <button @click=${this._createDirective}>${`Create Directive: ${CARD_VERSION}`}</button>
+          <div class="directive-list">
+            ${this.directives.map(directive => html`
+              <div class="directive-item">
+                <div class="directive-content">
+                  ${this.editingDirective?.id === directive.id
+                    ? html`
+                      <div class="edit-mode">
+                        <input
+                          type="text"
+                          .value=${this.editingDirective.message}
+                          @input=${(e: Event) => {
+                            const input = e.target as HTMLInputElement;
+                            if (this.editingDirective) {
+                              this.editingDirective = {
+                                id: this.editingDirective.id,
+                                message: input.value
+                              };
+                            }
+                          }}
+                        />
+                        <div class="directive-actions">
+                          <ha-button @click=${() => this._updateDirective()}>Save</ha-button>
+                          <ha-button @click=${() => this.editingDirective = null}>Cancel</ha-button>
+                        </div>
+                      </div>
+                    `
+                    : html`
+                      <div class="directive-message">
+                        <ha-icon
+                          icon=${this._getStatusIcon(directive.status)}
+                          class=${this._getStatusClass(directive.status)}
+                        ></ha-icon>
+                        ${directive.message}
+                      </div>
+                      <div class="directive-actions">
+                        ${this.deletingDirectiveId === directive.id
+                          ? html`
+                            <div class="confirm-delete">
+                              <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
+                              <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
+                            </div>
+                          `
+                          : html`
+                            <ha-button @click=${() => {
+                              if (directive.id) {
+                                this.editingDirective = { id: directive.id, message: directive.message };
+                              }
+                            }}>
+                              <ha-icon icon="mdi:pencil"></ha-icon>
+                            </ha-button>
+                            <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
+                              <ha-icon icon="mdi:delete"></ha-icon>
+                            </ha-button>
+                          `
+                        }
+                      </div>
+                    `
+                  }
+                </div>
+              </div>
+            `)}
+          </div>
+
+          <div class="new-directive">
+            <input
+              type="text"
+              .value=${this.newDirectiveMessage}
+              @input=${(e: Event) => {
+                const input = e.target as HTMLInputElement;
+                this.newDirectiveMessage = input.value;
+              }}
+              placeholder="Enter new directive..."
+            />
+            <ha-button @click=${() => this._createDirective()}>Create</ha-button>
+          </div>
         </div>
       </ha-card>
     `;
