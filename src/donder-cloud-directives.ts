@@ -88,7 +88,7 @@ export class BoilerplateCard extends LitElement {
     if (!this.config) {
       return false;
     }
-
+    console.log("shouldUpdate", changedProps, hasConfigOrEntityChanged(this, changedProps, false));
     return hasConfigOrEntityChanged(this, changedProps, false);
   }
 
@@ -281,6 +281,21 @@ export class BoilerplateCard extends LitElement {
         gap: 10px;
       }
     `;
+  }
+
+
+  private _updateDirectivesFromSensor(): void {
+    if (!this.config.entities || this.config.entities.length === 0) {
+      return;
+    }
+    const sensor = this.hass.states[this.config.entities[0]];
+    if (sensor && sensor.attributes.directives) {
+      this.directives = sensor.attributes.directives;
+    }
+  }
+
+  protected firstUpdated(): void {
+    this._updateDirectivesFromSensor();
   }
 
   protected render(): TemplateResult | void {
