@@ -285,9 +285,11 @@ export class BoilerplateCard extends LitElement {
 
 
   private _updateDirectivesFromSensor(): void {
+    console.log(this.config.entities);
     if (!this.config.entities || this.config.entities.length === 0) {
       return;
     }
+    console.log(this.hass.states, this.config.entities[0]);
     const sensor = this.hass.states[this.config.entities[0]];
     if (sensor && sensor.attributes.directives) {
       this.directives = sensor.attributes.directives;
@@ -295,6 +297,7 @@ export class BoilerplateCard extends LitElement {
   }
 
   protected firstUpdated(): void {
+    console.log("firstUpdated");
     this._updateDirectivesFromSensor();
   }
 
