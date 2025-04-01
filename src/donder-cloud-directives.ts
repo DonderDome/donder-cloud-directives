@@ -69,7 +69,6 @@ export class BoilerplateCard extends LitElement {
   @state() private deletingDirectiveId: string | null = null;
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
-    // TODO Check for required fields and that they are of the proper format
     if (!config) {
       throw new Error('Invalid configuration');
     }
@@ -79,8 +78,9 @@ export class BoilerplateCard extends LitElement {
     }
 
     this.config = {
-      name: 'Donder Cloud Directives',
       ...config,
+      name: config.name || 'Donder Cloud Directives',
+      entities: config.entities || ['sensor.donder_directives'],
     };
   }
 
@@ -116,21 +116,6 @@ export class BoilerplateCard extends LitElement {
     return html`
       ${errorCard}
     `;
-  }
-
-  private async _fetchDirectives(): Promise<void> {
-    try {
-      const response = await this.hass.callWS<{ success: boolean; directives: Directive[] }>({
-        type: "donder_cloud/get_directives",
-      });
-
-      if (response.success) {
-        this.directives = response.directives;
-      }
-    } catch (err) {
-      console.error("Error fetching directives:", err);
-      this._showNotification("Error fetching directives", "error");
-    }
   }
 
   private async _createDirective(): Promise<void> {
@@ -170,7 +155,6 @@ export class BoilerplateCard extends LitElement {
       });
 
       if (response.success) {
-        await this._fetchDirectives();
         this.editingDirective = null;
         this._showNotification("Directive updated successfully", "success");
       }
@@ -188,7 +172,6 @@ export class BoilerplateCard extends LitElement {
       });
 
       if (response.success) {
-        await this._fetchDirectives();
         this.deletingDirectiveId = null;
         this._showNotification("Directive deleted successfully", "success");
       }
@@ -298,10 +281,6 @@ export class BoilerplateCard extends LitElement {
         gap: 10px;
       }
     `;
-  }
-
-  protected firstUpdated(): void {
-    this._fetchDirectives();
   }
 
   protected render(): TemplateResult | void {
