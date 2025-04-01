@@ -10,7 +10,6 @@ import {
 import { state } from "lit/decorators";
 import {
   HomeAssistant,
-  hasConfigOrEntityChanged,
   hasAction,
   ActionHandlerEvent,
   handleAction,
@@ -79,8 +78,8 @@ export class BoilerplateCard extends LitElement {
 
     this.config = {
       ...config,
-      name: config.name || 'Donder Cloud Directives',
-      entities: config.entities || ['sensor.donder_directives'],
+      name: 'Donder Cloud Directives',
+      entity: 'sensor.donder_directives',
     };
   }
 
@@ -88,12 +87,27 @@ export class BoilerplateCard extends LitElement {
     if (!this.config) {
       return false;
     }
-    console.log("shouldUpdate", changedProps, hasConfigOrEntityChanged(this, changedProps, false));
-    return hasConfigOrEntityChanged(this, changedProps, false);
+    console.log("shouldUpdate", changedProps, this._hasConfigOrEntityChanged(this, changedProps, false));
+
+    return this._hasConfigOrEntityChanged(this, changedProps, false);
   }
 
+  protected _hasConfigOrEntityChanged(element: any, changedProps: PropertyValues, forceUpdate: boolean): boolean {
+    if (changedProps.has('config') || forceUpdate) {
+      return true;
+    }
+    
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+
+    if (oldHass && this.config.entity) {
+      const oldEntityState = oldHass.states[this.config.entity].state;
+      const newEntityState = element.hass.states[this.config.entity].state;
+      return oldEntityState !== newEntityState;
+    } else {
+      return false;
+    }
+  }
   private _handleAction(ev: ActionHandlerEvent): void {
-    console.log("Handling action");
     if (this.hass && this.config && ev.detail.action) {
       handleAction(this, this.hass, this.config, ev.detail.action);
     }
@@ -285,12 +299,7 @@ export class BoilerplateCard extends LitElement {
 
 
   private _updateDirectivesFromSensor(): void {
-    console.log(this.config.entities);
-    if (!this.config.entities || this.config.entities.length === 0) {
-      return;
-    }
-    console.log(this.hass.states, this.config.entities[0]);
-    const sensor = this.hass.states[this.config.entities[0]];
+    const sensor = this.hass.states[this.config.entity];
     if (sensor && sensor.attributes.directives) {
       this.directives = sensor.attributes.directives;
     }
@@ -319,7 +328,7 @@ export class BoilerplateCard extends LitElement {
     if (this.config.show_error) {
       return this._showError('error message');
     }
-
+    console.log("render", this.directives);
     return html`
       <ha-card
         .header=${this.config.name}
