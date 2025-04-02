@@ -90,7 +90,7 @@ export class BoilerplateCard extends LitElement {
     }
     console.log("shouldUpdate", changedProps, this._hasConfigOrEntityChanged(this, changedProps, false), hasConfigOrEntityChanged(this, changedProps, false));
 
-    return this._hasConfigOrEntityChanged(this, changedProps, false);
+    return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
   protected _hasConfigOrEntityChanged(element: any, changedProps: PropertyValues, forceUpdate: boolean): boolean {
