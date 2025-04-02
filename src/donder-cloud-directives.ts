@@ -10,6 +10,7 @@ import {
 import { state } from "lit/decorators";
 import {
   HomeAssistant,
+  hasConfigOrEntityChanged,
   hasAction,
   ActionHandlerEvent,
   handleAction,
@@ -87,7 +88,7 @@ export class BoilerplateCard extends LitElement {
     if (!this.config) {
       return false;
     }
-    console.log("shouldUpdate", changedProps, this._hasConfigOrEntityChanged(this, changedProps, false));
+    console.log("shouldUpdate", changedProps, this._hasConfigOrEntityChanged(this, changedProps, false), hasConfigOrEntityChanged(this, changedProps, false));
 
     return this._hasConfigOrEntityChanged(this, changedProps, false);
   }
@@ -105,11 +106,6 @@ export class BoilerplateCard extends LitElement {
       return oldEntityState !== newEntityState;
     } else {
       return false;
-    }
-  }
-  private _handleAction(ev: ActionHandlerEvent): void {
-    if (this.hass && this.config && ev.detail.action) {
-      handleAction(this, this.hass, this.config, ev.detail.action);
     }
   }
 
