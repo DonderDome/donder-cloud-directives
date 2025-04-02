@@ -11,17 +11,13 @@ import { state } from "lit/decorators";
 import {
   HomeAssistant,
   hasConfigOrEntityChanged,
-  hasAction,
-  ActionHandlerEvent,
-  handleAction,
   LovelaceCardEditor,
   getLovelace,
-} from 'custom-card-helpers'; // This is a community maintained npm module with common helper functions/types. https://github.com/custom-cards/custom-card-helpers
+} from 'custom-card-helpers';
 import { CARD_VERSION } from './constants';
 import './editor';
 
 import type { DonderCloudDirectivesConfig } from './types';
-import { actionHandler } from './action-handler-directive';
 
 interface Directive {
   id: string;
@@ -29,11 +25,6 @@ interface Directive {
   status: 'success' | 'warning' | 'error';
   scenario_id: string;
   created_at: string;
-}
-
-interface EditingDirective {
-  id: string;
-  message: string;
 }
 
 /* eslint no-console: 0 */
@@ -52,8 +43,6 @@ console.info(
 
 export class BoilerplateCard extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    // REPLACE "jarvis-widget-template" with widget name, everywhere in the project
-    // REPLACE the file name with the actual widget name
     return document.createElement('donder-cloud-directives-editor');
   }
 
@@ -65,7 +54,6 @@ export class BoilerplateCard extends LitElement {
   @state() private config!: DonderCloudDirectivesConfig;
   @state() private directives: Directive[] = [];
   @state() private newDirectiveMessage = '';
-  @state() private editingDirective: EditingDirective | null = null;
   @state() private deletingDirectiveId: string | null = null;
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
@@ -88,7 +76,6 @@ export class BoilerplateCard extends LitElement {
     if (!this.config) {
       return false;
     }
-    console.log("shouldUpdate", changedProps, this._hasConfigOrEntityChanged(this, changedProps, false), hasConfigOrEntityChanged(this, changedProps, false));
 
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
@@ -151,29 +138,6 @@ export class BoilerplateCard extends LitElement {
     }
   }
 
-  private async _updateDirective(): Promise<void> {
-    if (!this.editingDirective || !this.editingDirective.message.trim()) {
-      this._showNotification("Please enter a directive message", "warning");
-      return;
-    }
-
-    try {
-      const response = await this.hass.callWS<{ success: boolean; result: any }>({
-        type: "donder_cloud/update_directive",
-        directive_id: this.editingDirective.id,
-        message: this.editingDirective.message.trim(),
-      });
-
-      if (response.success) {
-        this.editingDirective = null;
-        this._showNotification("Directive updated successfully", "success");
-      }
-    } catch (err) {
-      console.error("Error updating directive:", err);
-      this._showNotification("Error updating directive", "error");
-    }
-  }
-
   private async _deleteDirective(directiveId: string): Promise<void> {
     try {
       const response = await this.hass.callWS<{ success: boolean; result: any }>({
@@ -227,7 +191,6 @@ export class BoilerplateCard extends LitElement {
 
   static get styles(): CSSResultGroup {
     return css`
-      /* REPLACE "jarvis-widget-template" with actual widget name */
       .type-custom-donder-cloud-directives {
         height: 100%;
         width: 100%;
@@ -282,10 +245,6 @@ export class BoilerplateCard extends LitElement {
       .new-directive input {
         flex-grow: 1;
       }
-      .edit-mode input {
-        width: 100%;
-        margin-bottom: 10px;
-      }
       .confirm-delete {
         display: flex;
         gap: 10px;
@@ -305,16 +264,6 @@ export class BoilerplateCard extends LitElement {
   }
 
   protected render(): TemplateResult | void {
-    /*
-      ## INTERFACE
-      - this.hass: A lot of information about everything in HA, such as states, theme, etc. The source of the tree
-        - states: States of each of the components available
-      - this.config: Lovelace settings for this instance
-
-      Example: this.hass.states[this.config.entities[0]] shows the state of the first component
-     */
-
-    // TODO Check for stateObj or other necessary things and render a warning if missing
     if (this.config.show_warning) {
       return this._showWarning('warning message');
     }
@@ -322,7 +271,7 @@ export class BoilerplateCard extends LitElement {
     if (this.config.show_error) {
       return this._showError('error message');
     }
-    console.log("render", this.directives);
+
     this._updateDirectivesFromSensor();
     
     return html`
@@ -333,65 +282,31 @@ export class BoilerplateCard extends LitElement {
       >
         <div class='donder-cloud-directives'>
           <div class="directive-list">
-            ${this.directives.length}
             ${this.directives.map(directive => html`
               <div class="directive-item">
                 <div class="directive-content">
-                  ${this.editingDirective?.id === directive.id
-                    ? html`
-                      <div class="edit-mode">
-                        <input
-                          type="text"
-                          .value=${this.editingDirective.message}
-                          @input=${(e: Event) => {
-                            const input = e.target as HTMLInputElement;
-                            if (this.editingDirective) {
-                              this.editingDirective = {
-                                id: this.editingDirective.id,
-                                message: input.value
-                              };
-                            }
-                          }}
-                          @click=${(e: Event) => e.stopPropagation()}
-                        />
-                        <div class="directive-actions">
-                          <ha-button @click=${() => this._updateDirective()}>Save</ha-button>
-                          <ha-button @click=${() => this.editingDirective = null}>Cancel</ha-button>
+                  <div class="directive-message">
+                    <ha-icon
+                      icon=${this._getStatusIcon(directive.status)}
+                      class=${this._getStatusClass(directive.status)}
+                    ></ha-icon>
+                    ${directive.message}
+                  </div>
+                  <div class="directive-actions">
+                    ${this.deletingDirectiveId === directive.id
+                      ? html`
+                        <div class="confirm-delete">
+                          <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
+                          <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
                         </div>
-                      </div>
-                    `
-                    : html`
-                      <div class="directive-message">
-                        <ha-icon
-                          icon=${this._getStatusIcon(directive.status)}
-                          class=${this._getStatusClass(directive.status)}
-                        ></ha-icon>
-                        ${directive.message}
-                      </div>
-                      <div class="directive-actions">
-                        ${this.deletingDirectiveId === directive.id
-                          ? html`
-                            <div class="confirm-delete">
-                              <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
-                              <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
-                            </div>
-                          `
-                          : html`
-                            <ha-button @click=${() => {
-                              if (directive.id) {
-                                this.editingDirective = { id: directive.id, message: directive.message };
-                              }
-                            }}>
-                              <ha-icon icon="mdi:pencil"></ha-icon>
-                            </ha-button>
-                            <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
-                              <ha-icon icon="mdi:delete"></ha-icon>
-                            </ha-button>
-                          `
-                        }
-                      </div>
-                    `
-                  }
+                      `
+                      : html`
+                        <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
+                          <ha-icon icon="mdi:delete"></ha-icon>
+                        </ha-button>
+                      `
+                    }
+                  </div>
                 </div>
               </div>
             `)}
