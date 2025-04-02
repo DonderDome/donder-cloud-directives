@@ -297,7 +297,6 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
-
   private _updateDirectivesFromSensor(): void {
     const sensor = this.hass.states[this.config.entity];
     if (sensor && sensor.attributes.directives) {
@@ -306,7 +305,6 @@ export class BoilerplateCard extends LitElement {
   }
 
   protected firstUpdated(): void {
-    console.log("firstUpdated");
     this._updateDirectivesFromSensor();
   }
 
@@ -334,16 +332,12 @@ export class BoilerplateCard extends LitElement {
     return html`
       <ha-card
         .header=${this.config.name}
-        @action=${this._handleAction}
-        .actionHandler=${actionHandler({
-          hasHold: hasAction(this.config.hold_action),
-          hasDoubleClick: hasAction(this.config.double_tap_action),
-        })}
+        @click=${(e: Event) => e.stopPropagation()}
         tabindex="0"
-        .label=${`Boilerplate: ${this.config || 'No Entity Defined'}`}
       >
         <div class='donder-cloud-directives'>
           <div class="directive-list">
+            ${this.directives.length}
             ${this.directives.map(directive => html`
               <div class="directive-item">
                 <div class="directive-content">
@@ -362,6 +356,7 @@ export class BoilerplateCard extends LitElement {
                               };
                             }
                           }}
+                          @click=${(e: Event) => e.stopPropagation()}
                         />
                         <div class="directive-actions">
                           <ha-button @click=${() => this._updateDirective()}>Save</ha-button>
@@ -414,6 +409,7 @@ export class BoilerplateCard extends LitElement {
                 const input = e.target as HTMLInputElement;
                 this.newDirectiveMessage = input.value;
               }}
+              @click=${(e: Event) => e.stopPropagation()}
               placeholder="Enter new directive..."
             />
             <ha-button @click=${() => this._createDirective()}>Create</ha-button>
