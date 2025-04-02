@@ -329,6 +329,8 @@ export class BoilerplateCard extends LitElement {
       return this._showError('error message');
     }
     console.log("render", this.directives);
+    this._updateDirectivesFromSensor();
+    
     return html`
       <ha-card
         .header=${this.config.name}
