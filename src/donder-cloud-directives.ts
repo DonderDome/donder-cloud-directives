@@ -133,15 +133,32 @@ export class DonderCloudDirectives extends LitElement {
       .type-custom-donder-cloud-directives {
         height: 100%;
         width: 100%;
+        box-sizing: border-box;
+        padding: var(--spacing);
+        display: flex;
+        flex-direction: column;
+        justify-content: var(--layout-align);
+        height: auto;
+        cursor: pointer;
       }
       .donder-cloud-directives {
         height: 100%;
         width: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
         padding: 20px;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      .status-icon {
+        margin-right: var(--spacing);
+      }
+      .status-text {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
       }
       .summary {
         display: flex;
@@ -149,6 +166,24 @@ export class DonderCloudDirectives extends LitElement {
         align-items: center;
         gap: 16px;
         padding: 16px;
+      }
+      .status-text-total {
+        font-weight: var(--card-primary-font-weight);
+        font-size: var(--card-primary-font-size);
+        line-height: var(--card-primary-line-height);
+        color: var(--primary-text-color);
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .status-text-subtitle {
+        font-weight: var(--card-secondary-font-weight);
+        font-size: var(--card-secondary-font-size);
+        line-height: var(--card-secondary-line-height);
+        color: var(--secondary-text-color);
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
       }
       .status-success {
         color: var(--success-color);
@@ -189,18 +224,22 @@ export class DonderCloudDirectives extends LitElement {
     
     return html`
       <ha-card
-        .header=${this.config.name}
         @click=${() => this._openDialog()}
         tabindex="0"
       >
         <div class='donder-cloud-directives'>
-          <div class="summary">
+          <div class="status-icon">
             ${status.warning > 0 
-              ? html`<ha-icon icon="mdi:alert-circle"></ha-icon>` 
+              ? html`<ha-icon icon="mdi:alert-circle" class="status-warning"></ha-icon>` 
               : html`<ha-icon icon="mdi:alpha-d-circle"></ha-icon>`
             }
-            <div class="status-text">
-              ${status} directives
+          </div>
+          <div class="status-text">
+            <div class="status-text-total">
+              ${status.total} directives
+            </div>
+            <div class="status-text-subtitle">
+
             </div>
           </div>
         </div>

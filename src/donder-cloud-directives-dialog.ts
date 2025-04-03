@@ -6,7 +6,7 @@ import {
   CSSResultGroup,
 } from 'lit';
 import { state } from "lit/decorators";
-import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
+import { HomeAssistant } from 'custom-card-helpers';
 
 interface Directive {
   id: string;
@@ -25,8 +25,8 @@ interface DirectiveResponse {
 export class DonderCloudDirectivesDialog extends LitElement {
   @state() public hass!: HomeAssistant;
   @state() private directives: Directive[] = [];
+  @state() deletingDirectiveId: string | null = null;
   private newDirectiveMessage = '';
-  private deletingDirectiveId: string | null = null;
   private _isRendered = false;
 
   public setConfig(hass: HomeAssistant, directives: Directive[]): void {
@@ -91,11 +91,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
   private _getStatusIcon(status: string): string {
     switch (status) {
       case 'success':
-        return 'mdi:check-circle';
+        return 'mdi:check-all';
       case 'warning':
         return 'mdi:alert-circle';
-      case 'error':
-        return 'mdi:close-circle';
       default:
         return 'mdi:help-circle';
     }
@@ -107,8 +105,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
         return 'status-success';
       case 'warning':
         return 'status-warning';
-      case 'error':
-        return 'status-error';
       default:
         return 'status-unknown';
     }
@@ -121,16 +117,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
         padding: 16px;
         max-width: 600px;
         width: 100%;
-      }
-      .dialog-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-      }
-      .dialog-title {
-        font-size: 20px;
-        font-weight: bold;
       }
       .directive-list {
         margin-bottom: 20px;
@@ -150,6 +136,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .directive-message {
         margin-bottom: 5px;
       }
+      .directive-status-icon {
+        margin-right: var(--spacing);
+      }
       .directive-actions {
         display: flex;
         gap: 10px;
@@ -159,12 +148,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .status-warning {
         color: var(--warning-color);
-      }
-      .status-error {
-        color: var(--error-color);
-      }
-      .status-unknown {
-        color: var(--secondary-text-color);
       }
       .new-directive {
         display: flex;
@@ -182,6 +165,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
         display: flex;
         justify-content: flex-end;
         margin-top: 16px;
+      }
+      .delete-icon {
+        color: var(--secondary-text-color);
       }
     `;
   }
@@ -223,7 +209,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   protected render(): TemplateResult {
     this._isRendered = true;
-    console.log("render dialog")
 
     return html`
       <ha-dialog
@@ -231,57 +216,39 @@ export class DonderCloudDirectivesDialog extends LitElement {
           @closed=${() => this.onDialogClose()}
           hideActions
         >
-          <ha-dialog-header slot="heading" class="hue-heading detail-hide">
-            <ha-icon-button
-              slot="navigationIcon"
-              dialogAction="cancel"
-            >
-              <ha-icon
-                icon="mdi:close"
-                style="height:auto"
-              >
-              </ha-icon>
-            </ha-icon-button>
-            <div
-              slot="title"
-              class="main-title"
-            >
-              This is a title
-            </div>
-          </ha-dialog-header>
-
           <div class="content">
             <div class="directive-list">
               ${this.directives.map(directive => html`
                 <div class="directive-item">
                   <div class="directive-content">
                     <div class="directive-message">
-                      <ha-icon
-                        icon=${this._getStatusIcon(directive.status)}
-                        class=${this._getStatusClass(directive.status)}
-                      ></ha-icon>
+                      <div class="directive-status-icon">
+                        <ha-icon
+                          icon=${this._getStatusIcon(directive.status)}
+                          class=${this._getStatusClass(directive.status)}
+                        ></ha-icon>
+                      </div>
                       ${directive.message}
                     </div>
-                    <div class="directive-actions">
-                      ${this.deletingDirectiveId === directive.id
-                        ? html`
-                          <div class="confirm-delete">
-                            <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
-                            <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
-                          </div>
-                        `
-                        : html`
-                          <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
-                            <ha-icon icon="mdi:delete"></ha-icon>
-                          </ha-button>
-                        `
-                      }
-                    </div>
+                  </div>
+                  <div class="directive-actions">
+                    ${this.deletingDirectiveId === directive.id
+                      ? html`
+                        <div class="confirm-delete">
+                          <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
+                          <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
+                        </div>
+                      `
+                      : html`
+                        <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
+                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon"></ha-icon>
+                        </ha-button>
+                      `
+                    }
                   </div>
                 </div>
               `)}
             </div>
-
             <div class="new-directive">
               <input
                 type="text"
