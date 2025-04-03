@@ -125,8 +125,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .directive-item {
         display: flex;
+        position: relative;
         align-items: center;
         padding: 10px;
+        padding-right: 100px;
         border-bottom: 1px solid var(--divider-color);
       }
       .directive-content {
@@ -135,13 +137,23 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .directive-message {
         margin-bottom: 5px;
+        max-width: 350px;
+        flex-wrap: wrap;
       }
       .directive-status-icon {
         margin-right: var(--spacing);
       }
       .directive-actions {
+        position: absolute;
+        right: 0;
+        top: 0;
         display: flex;
         gap: 10px;
+        background-image: linear-gradient(
+          to right, 
+          color-mix(in srgb, var(--mdc-theme-surface) 0%, transparent), 
+          color-mix(in srgb, var(--mdc-theme-surface) 100%, transparent)
+        );
       }
       .status-success {
         color: var(--success-color);
@@ -221,15 +233,15 @@ export class DonderCloudDirectivesDialog extends LitElement {
               ${this.directives.map(directive => html`
                 <div class="directive-item">
                   <div class="directive-content">
-                    <div class="directive-message">
-                      <div class="directive-status-icon">
-                        <ha-icon
-                          icon=${this._getStatusIcon(directive.status)}
-                          class=${this._getStatusClass(directive.status)}
-                        ></ha-icon>
-                      </div>
-                      ${directive.message}
+                    <div class="directive-status-icon">
+                      <ha-icon
+                        icon=${this._getStatusIcon(directive.status)}
+                        class=${this._getStatusClass(directive.status)}
+                      ></ha-icon>
                     </div>
+                    <div class="directive-message">
+                      ${directive.message}  
+                    </div>                    
                   </div>
                   <div class="directive-actions">
                     ${this.deletingDirectiveId === directive.id
