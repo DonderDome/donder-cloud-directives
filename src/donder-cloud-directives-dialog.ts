@@ -26,11 +26,11 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() public hass!: HomeAssistant;
   @state() private directives: Directive[] = [];
   @state() deletingDirectiveId: string | null = null;
+  @state() isLoading = false;
   private newDirectiveMessage = '';
   private _isRendered = false;
 
   public setConfig(hass: HomeAssistant, directives: Directive[]): void {
-    console.log("set config dialog", hass, directives)
     this.hass = hass;
     this.directives = directives;
   }
@@ -41,6 +41,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private async _createDirective(): Promise<void> {
+    if (this.isLoading) {
+      return;
+    }
+
     if (!this.newDirectiveMessage.trim()) {
       this._showNotification("Please enter a directive message", "warning");
       return;
@@ -51,32 +55,40 @@ export class DonderCloudDirectivesDialog extends LitElement {
         type: "donder_cloud/create_directive",
         message: this.newDirectiveMessage.trim(),
       });
-
+      this.isLoading = true;
       if (response.success) {
+        this.isLoading = false;
         this.directives = response.directives;
         this.newDirectiveMessage = '';
         this._showNotification("Directive created successfully", "success");
       }
     } catch (err) {
       console.error("Error creating directive:", err);
+      this.isLoading = false;
       this._showNotification("Error creating directive", "error");
     }
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
+    if (this.isLoading) {
+      return;
+    }
+
     try {
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/delete_directive",
         directive_id: directiveId,
       });
-
+      this.isLoading = true;
       if (response.success) {
         this.deletingDirectiveId = null;
         this._showNotification("Directive deleted successfully", "success");
+        this.isLoading = false;
       }
     } catch (err) {
       console.error("Error deleting directive:", err);
       this._showNotification("Error deleting directive", "error");
+      this.isLoading = false;
     }
   }
 
@@ -132,6 +144,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
         padding-right: 100px;
         border-bottom: 1px solid var(--divider-color);
       }
+      .directive-item:last-child {
+        border-bottom: none;
+      }
       .directive-content {
         flex-grow: 1;
         margin-right: 10px;
@@ -147,17 +162,17 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .directive-actions {
         position: absolute;
-        width: 50px;
+        width: 0%;
         right: 0;
         top: 0;
         display: flex;
         gap: 10px;
         background-image: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--mdc-theme-surface) 60%);
-        transition: width 0.3s ease-in-out;
+        transition: width 0s ease-in-out;
         justify-content: flex-end;
       }
       .directive-actions.expanded {
-        width: 300px;
+        width: 100%;
       }
       .status-success {
         color: var(--success-color);
@@ -172,6 +187,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .new-directive input {
         flex-grow: 1;
+      }
+      .new-directive-input {
+        padding: var(--spacing);
       }
       .confirm-delete {
         display: flex;
@@ -251,12 +269,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
                     ${this.deletingDirectiveId === directive.id
                       ? html`
                         <div class="confirm-delete">
-                          <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
-                          <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
+                          <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${this.isLoading}>Confirm</ha-button>
+                          <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${this.isLoading}>Cancel</ha-button>
                         </div>
                       `
                       : html`
-                        <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
+                        <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${this.isLoading}>
                           <ha-icon icon="mdi:trash-can-outline" class="delete-icon"></ha-icon>
                         </ha-button>
                       `
@@ -268,6 +286,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
             <div class="new-directive">
               <input
                 type="text"
+                class="new-directive-input"
                 .value=${this.newDirectiveMessage}
                 @input=${(e: Event) => {
                   const input = e.target as HTMLInputElement;
@@ -275,8 +294,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 }}
                 @click=${(e: Event) => e.stopPropagation()}
                 placeholder="Enter new directive..."
+                ?disabled=${this.isLoading}
               />
-              <ha-button @click=${() => this._createDirective()}>Create</ha-button>
+              <ha-button @click=${() => this._createDirective()} ?disabled=${this.isLoading}>Create</ha-button>
             </div>
           </div>
         </ha-dialog>

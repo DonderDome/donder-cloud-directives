@@ -147,7 +147,6 @@ export class DonderCloudDirectives extends LitElement {
       .donder-cloud-directives {
         height: 100%;
         width: 100%;
-        padding: 20px;
         box-sizing: border-box;
         display: flex;
         flex-direction: row;
