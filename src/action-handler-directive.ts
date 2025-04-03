@@ -160,6 +160,10 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     this.ripple.disabled = true;
     this.style.display = 'none';
   }
+
+  private _handleClick(): void {
+    this.dispatchEvent(new CustomEvent('action', { detail: {} }));
+  }
 }
 
 // DONE You need to replace all instances of "action-handler-jarvis-widget-template" with "action-handler-<your card name>"
@@ -192,7 +196,10 @@ export const actionHandler = directive(
       return noChange;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    render(_options?: ActionHandlerOptions) {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
+    render(_options?: ActionHandlerOptions) {
+      // This method is required by the Directive interface but doesn't need to do anything
+      return noChange;
+    }
   },
 );

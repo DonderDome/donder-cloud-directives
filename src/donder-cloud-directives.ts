@@ -7,7 +7,6 @@ import {
   PropertyValues,
   CSSResultGroup,
 } from 'lit';
-import { state } from "lit/decorators";
 import {
   HomeAssistant,
   hasConfigOrEntityChanged,
@@ -16,6 +15,8 @@ import {
 } from 'custom-card-helpers';
 import { CARD_VERSION } from './constants';
 import './editor';
+import './donder-cloud-directives-dialog';
+import { DonderCloudDirectivesDialog } from './donder-cloud-directives-dialog';
 
 import type { DonderCloudDirectivesConfig } from './types';
 
@@ -50,11 +51,9 @@ export class BoilerplateCard extends LitElement {
     return {};
   }
 
-  @state() public hass!: HomeAssistant;
-  @state() private config!: DonderCloudDirectivesConfig;
-  @state() private directives: Directive[] = [];
-  @state() private newDirectiveMessage = '';
-  @state() private deletingDirectiveId: string | null = null;
+  public hass!: HomeAssistant;
+  private config!: DonderCloudDirectivesConfig;
+  private directives: Directive[] = [];
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
     if (!config) {
@@ -80,7 +79,7 @@ export class BoilerplateCard extends LitElement {
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
-  protected _hasConfigOrEntityChanged(element: any, changedProps: PropertyValues, forceUpdate: boolean): boolean {
+  protected _hasConfigOrEntityChanged(element: BoilerplateCard, changedProps: PropertyValues, forceUpdate: boolean): boolean {
     if (changedProps.has('config') || forceUpdate) {
       return true;
     }
@@ -115,46 +114,6 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
-  private async _createDirective(): Promise<void> {
-    if (!this.newDirectiveMessage.trim()) {
-      this._showNotification("Please enter a directive message", "warning");
-      return;
-    }
-
-    try {
-      const response = await this.hass.callWS<{ success: boolean; result: any; directives: Directive[] }>({
-        type: "donder_cloud/create_directive",
-        message: this.newDirectiveMessage.trim(),
-      });
-
-      if (response.success) {
-        this.directives = response.directives;
-        this.newDirectiveMessage = '';
-        this._showNotification("Directive created successfully", "success");
-      }
-    } catch (err) {
-      console.error("Error creating directive:", err);
-      this._showNotification("Error creating directive", "error");
-    }
-  }
-
-  private async _deleteDirective(directiveId: string): Promise<void> {
-    try {
-      const response = await this.hass.callWS<{ success: boolean; result: any }>({
-        type: "donder_cloud/delete_directive",
-        directive_id: directiveId,
-      });
-
-      if (response.success) {
-        this.deletingDirectiveId = null;
-        this._showNotification("Directive deleted successfully", "success");
-      }
-    } catch (err) {
-      console.error("Error deleting directive:", err);
-      this._showNotification("Error deleting directive", "error");
-    }
-  }
-
   private _showNotification(message: string, type: 'success' | 'error' | 'warning'): void {
     this.hass.callService("persistent_notification", "create", {
       title: "Donder Cloud",
@@ -163,30 +122,27 @@ export class BoilerplateCard extends LitElement {
     });
   }
 
-  private _getStatusIcon(status: string): string {
-    switch (status) {
-      case 'success':
-        return 'mdi:check-circle';
-      case 'warning':
-        return 'mdi:alert-circle';
-      case 'error':
-        return 'mdi:close-circle';
-      default:
-        return 'mdi:help-circle';
-    }
+  private _getStatusCounts(): { success: number; warning: number; error: number } {
+    return this.directives.reduce(
+      (counts, directive) => {
+        counts[directive.status]++;
+        return counts;
+      },
+      { success: 0, warning: 0, error: 0 }
+    );
   }
 
-  private _getStatusClass(status: string): string {
-    switch (status) {
-      case 'success':
-        return 'status-success';
-      case 'warning':
-        return 'status-warning';
-      case 'error':
-        return 'status-error';
-      default:
-        return 'status-unknown';
-    }
+  private _openDialog(): void {
+    const dialog = document.createElement('ha-dialog');
+    const content = document.createElement('donder-cloud-directives-dialog') as DonderCloudDirectivesDialog;
+    content.setConfig(this.hass, this.directives);
+    
+    dialog.appendChild(content);
+    document.body.appendChild(dialog);
+    
+    dialog.addEventListener('closed', () => {
+      document.body.removeChild(dialog);
+    });
   }
 
   static get styles(): CSSResultGroup {
@@ -203,27 +159,32 @@ export class BoilerplateCard extends LitElement {
         left: 0;
         padding: 20px;
         box-sizing: border-box;
-        border: 1px solid #fff;
       }
-      .directive-list {
-        margin-bottom: 20px;
-      }
-      .directive-item {
+      .summary {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid var(--divider-color);
+        gap: 16px;
+        padding: 16px;
       }
-      .directive-content {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-      .directive-message {
-        margin-bottom: 5px;
-      }
-      .directive-actions {
+      .counts {
         display: flex;
-        gap: 10px;
+        gap: 24px;
+        justify-content: center;
+      }
+      .count-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .count-value {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .count-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
       }
       .status-success {
         color: var(--success-color);
@@ -233,21 +194,6 @@ export class BoilerplateCard extends LitElement {
       }
       .status-error {
         color: var(--error-color);
-      }
-      .status-unknown {
-        color: var(--secondary-text-color);
-      }
-      .new-directive {
-        display: flex;
-        gap: 10px;
-        margin-top: 20px;
-      }
-      .new-directive input {
-        flex-grow: 1;
-      }
-      .confirm-delete {
-        display: flex;
-        gap: 10px;
       }
     `;
   }
@@ -274,56 +220,34 @@ export class BoilerplateCard extends LitElement {
 
     this._updateDirectivesFromSensor();
     
+    const counts = this._getStatusCounts();
+    
     return html`
       <ha-card
         .header=${this.config.name}
-        @click=${(e: Event) => e.stopPropagation()}
+        @click=${() => this._openDialog()}
         tabindex="0"
       >
         <div class='donder-cloud-directives'>
-          <div class="directive-list">
-            ${this.directives.map(directive => html`
-              <div class="directive-item">
-                <div class="directive-content">
-                  <div class="directive-message">
-                    <ha-icon
-                      icon=${this._getStatusIcon(directive.status)}
-                      class=${this._getStatusClass(directive.status)}
-                    ></ha-icon>
-                    ${directive.message}
-                  </div>
-                  <div class="directive-actions">
-                    ${this.deletingDirectiveId === directive.id
-                      ? html`
-                        <div class="confirm-delete">
-                          <ha-button @click=${() => this._deleteDirective(directive.id)}>Confirm</ha-button>
-                          <ha-button @click=${() => this.deletingDirectiveId = null}>Cancel</ha-button>
-                        </div>
-                      `
-                      : html`
-                        <ha-button @click=${() => this.deletingDirectiveId = directive.id}>
-                          <ha-icon icon="mdi:delete"></ha-icon>
-                        </ha-button>
-                      `
-                    }
-                  </div>
-                </div>
+          <div class="summary">
+            <div class="counts">
+              <div class="count-item">
+                <div class="count-value status-success">${counts.success}</div>
+                <div class="count-label">Success</div>
               </div>
-            `)}
-          </div>
-
-          <div class="new-directive">
-            <input
-              type="text"
-              .value=${this.newDirectiveMessage}
-              @input=${(e: Event) => {
-                const input = e.target as HTMLInputElement;
-                this.newDirectiveMessage = input.value;
-              }}
-              @click=${(e: Event) => e.stopPropagation()}
-              placeholder="Enter new directive..."
-            />
-            <ha-button @click=${() => this._createDirective()}>Create</ha-button>
+              <div class="count-item">
+                <div class="count-value status-warning">${counts.warning}</div>
+                <div class="count-label">Warning</div>
+              </div>
+              <div class="count-item">
+                <div class="count-value status-error">${counts.error}</div>
+                <div class="count-label">Error</div>
+              </div>
+            </div>
+            <ha-button>
+              <ha-icon icon="mdi:cog"></ha-icon>
+              Manage Directives
+            </ha-button>
           </div>
         </div>
       </ha-card>
