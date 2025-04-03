@@ -5,6 +5,7 @@ import {
   css,
   CSSResultGroup,
 } from 'lit';
+import { state } from "lit/decorators";
 import { HomeAssistant } from 'custom-card-helpers';
 
 interface Directive {
@@ -22,8 +23,8 @@ interface DirectiveResponse {
 }
 
 export class DonderCloudDirectivesDialog extends LitElement {
-  private hass!: HomeAssistant;
-  private directives: Directive[] = [];
+  @state() private hass!: HomeAssistant;
+  @state() private directives: Directive[] = [];
   private newDirectiveMessage = '';
   private deletingDirectiveId: string | null = null;
   private _isRendered = false;
