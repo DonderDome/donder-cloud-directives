@@ -238,10 +238,13 @@ export class DonderCloudDirectives extends LitElement {
           </div>
           <div class="status-text">
             <div class="status-text-total">
-              ${status.total} directives
+              You have a total of${status.total} directives
             </div>
             <div class="status-text-subtitle">
-
+              ${status.warning > 0 
+                ? html`<span>${status.warning}</span> warnings`
+                : html`<span>${status.success}</span> successes`
+              }
             </div>
           </div>
         </div>

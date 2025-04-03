@@ -75,11 +75,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
 
     try {
+      this.isCreating = true;
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/create_directive",
         message: this.newDirectiveMessage.trim(),
       });
-      this.isCreating = true;
+      
       if (response.success) {
         this.isCreating = false;
         this.directives = response.directives;
@@ -99,11 +100,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
 
     try {
+      this.isDeleting = true;
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/delete_directive",
         directive_id: directiveId,
       });
-      this.isDeleting = true;
+      
       if (response.success) {
         this.deletingDirectiveId = null;
         this._showNotification("Directive deleted successfully", "success");
@@ -275,6 +277,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
   protected render(): TemplateResult {
     this._isRendered = true;
     const isLoading = this.isDeleting || this.isCreating;
+
+    console.log("is loading", isLoading);
 
     return html`
       <ha-dialog
