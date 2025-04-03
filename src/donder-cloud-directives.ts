@@ -133,6 +133,7 @@ export class BoilerplateCard extends LitElement {
   }
 
   private _openDialog(): void {
+    console.log('Opening dialog');
     const dialog = document.createElement('ha-dialog');
     const content = document.createElement('donder-cloud-directives-dialog') as DonderCloudDirectivesDialog;
     content.setConfig(this.hass, this.directives);
