@@ -23,14 +23,6 @@ interface DirectiveResponse {
 }
 
 export class DonderCloudDirectivesDialog extends LitElement {
-  public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    return document.createElement('donder-cloud-directives-editor');
-  }
-
-  public static getStubConfig(): Record<string, unknown> {
-    return {};
-  }
-  
   @state() public hass!: HomeAssistant;
   @state() private directives: Directive[] = [];
   private newDirectiveMessage = '';

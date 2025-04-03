@@ -111,13 +111,14 @@ export class DonderCloudDirectives extends LitElement {
     `;
   }
 
-  private _getStatusCounts(): { success: number; warning: number; error: number } {
+  private _getStatus(): { total: number; success: number; warning: number } {
     return this.directives.reduce(
       (counts, directive) => {
         counts[directive.status]++;
+        counts.total++;
         return counts;
       },
-      { success: 0, warning: 0, error: 0 }
+      { total: 0, success: 0, warning: 0 }
     );
   }
 
@@ -149,33 +150,11 @@ export class DonderCloudDirectives extends LitElement {
         gap: 16px;
         padding: 16px;
       }
-      .counts {
-        display: flex;
-        gap: 24px;
-        justify-content: center;
-      }
-      .count-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-      }
-      .count-value {
-        font-size: 24px;
-        font-weight: bold;
-      }
-      .count-label {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
       .status-success {
         color: var(--success-color);
       }
       .status-warning {
         color: var(--warning-color);
-      }
-      .status-error {
-        color: var(--error-color);
       }
     `;
   }
@@ -206,7 +185,7 @@ export class DonderCloudDirectives extends LitElement {
 
     this._updateDirectivesFromSensor();
     
-    const counts = this._getStatusCounts();
+    const status = this._getStatus();
     
     return html`
       <ha-card
@@ -216,24 +195,13 @@ export class DonderCloudDirectives extends LitElement {
       >
         <div class='donder-cloud-directives'>
           <div class="summary">
-            <div class="counts">
-              <div class="count-item">
-                <div class="count-value status-success">${counts.success}</div>
-                <div class="count-label">Success</div>
-              </div>
-              <div class="count-item">
-                <div class="count-value status-warning">${counts.warning}</div>
-                <div class="count-label">Warning</div>
-              </div>
-              <div class="count-item">
-                <div class="count-value status-error">${counts.error}</div>
-                <div class="count-label">Error</div>
-              </div>
+            ${status.warning > 0 
+              ? html`<ha-icon icon="mdi:alert-circle"></ha-icon>` 
+              : html`<ha-icon icon="mdi:alpha-d-circle"></ha-icon>`
+            }
+            <div class="status-text">
+              ${status} directives
             </div>
-            <ha-button>
-              <ha-icon icon="mdi:cog"></ha-icon>
-              Manage Directives
-            </ha-button>
           </div>
         </div>
       </ha-card>
