@@ -108,8 +108,26 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   static get styles(): CSSResultGroup {
     return css`
+      :host {
+        display: block;
+        padding: 16px;
+        max-width: 600px;
+        width: 100%;
+      }
+      .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .dialog-title {
+        font-size: 20px;
+        font-weight: bold;
+      }
       .directive-list {
         margin-bottom: 20px;
+        max-height: 400px;
+        overflow-y: auto;
       }
       .directive-item {
         display: flex;
@@ -152,11 +170,21 @@ export class DonderCloudDirectivesDialog extends LitElement {
         display: flex;
         gap: 10px;
       }
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
     `;
   }
 
   protected render(): TemplateResult {
     return html`
+      <div class="dialog-header">
+        <div class="dialog-title">Manage Directives</div>
+        <ha-icon-button icon="mdi:close" @click=${this._closeDialog}></ha-icon-button>
+      </div>
+      
       <div class="directive-list">
         ${this.directives.map(directive => html`
           <div class="directive-item">
@@ -201,7 +229,19 @@ export class DonderCloudDirectivesDialog extends LitElement {
         />
         <ha-button @click=${() => this._createDirective()}>Create</ha-button>
       </div>
+      
+      <div class="dialog-footer">
+        <ha-button @click=${this._closeDialog}>Close</ha-button>
+      </div>
     `;
+  }
+  
+  private _closeDialog(): void {
+    const event = new CustomEvent('closed', {
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
   }
 }
 
