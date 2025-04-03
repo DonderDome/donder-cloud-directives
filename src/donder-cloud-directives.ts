@@ -139,6 +139,7 @@ export class BoilerplateCard extends LitElement {
     //   document.body.removeChild(dialog);
     // });
     const dialog = new DonderCloudDirectivesDialog();
+    dialog.setConfig(this.hass, this.directives);
     dialog.show();
   }
 
