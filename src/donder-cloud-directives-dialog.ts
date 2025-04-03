@@ -220,8 +220,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
     return this.renderRoot.querySelector('ha-dialog');
 }
 
-  protected override render(): TemplateResult {
+  protected render(): TemplateResult {
     this._isRendered = true;
+    console.log("render dialog")
 
     return html`
       <ha-dialog

@@ -195,7 +195,7 @@ export class BoilerplateCard extends LitElement {
     this._updateDirectivesFromSensor();
   }
 
-  protected override render(): TemplateResult | void {
+  protected render(): TemplateResult | void {
     if (this.config.show_warning) {
       return this._showWarning('warning message');
     }
@@ -203,6 +203,8 @@ export class BoilerplateCard extends LitElement {
     if (this.config.show_error) {
       return this._showError('error message');
     }
+
+    console.log("render component")
 
     this._updateDirectivesFromSensor();
     
