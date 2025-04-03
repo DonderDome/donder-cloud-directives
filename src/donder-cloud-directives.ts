@@ -12,7 +12,6 @@ import {
   HomeAssistant,
   hasConfigOrEntityChanged,
   LovelaceCardEditor,
-  getLovelace,
 } from 'custom-card-helpers';
 import { CARD_VERSION } from './constants';
 import './editor';
@@ -43,7 +42,7 @@ console.info(
   description: 'A custom card for managing directives',
 });
 
-export class BoilerplateCard extends LitElement {
+export class DonderCloudDirectives extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     return document.createElement('donder-cloud-directives-editor');
   }
@@ -55,14 +54,10 @@ export class BoilerplateCard extends LitElement {
   @state() public hass!: HomeAssistant;
   @state() private config!: DonderCloudDirectivesConfig;
   @state() private directives: Directive[] = [];
-
+  private dialog: DonderCloudDirectivesDialog | null = null;
   public setConfig(config: DonderCloudDirectivesConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
-    }
-
-    if (config.test_gui) {
-      getLovelace().setEditMode(true);
     }
 
     this.config = {
@@ -81,7 +76,7 @@ export class BoilerplateCard extends LitElement {
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
-  protected _hasConfigOrEntityChanged(element: BoilerplateCard, changedProps: PropertyValues, forceUpdate: boolean): boolean {
+  protected _hasConfigOrEntityChanged(element: DonderCloudDirectives, changedProps: PropertyValues, forceUpdate: boolean): boolean {
     if (changedProps.has('config') || forceUpdate) {
       return true;
     }
@@ -127,9 +122,9 @@ export class BoilerplateCard extends LitElement {
   }
 
   private _openDialog(): void {
-    const dialog = new DonderCloudDirectivesDialog();
-    dialog.setConfig(this.hass, this.directives);
-    dialog.show();
+    this.dialog = new DonderCloudDirectivesDialog();
+    this.dialog.setConfig(this.hass, this.directives);
+    this.dialog.show();
   }
 
   static get styles(): CSSResultGroup {
@@ -189,6 +184,10 @@ export class BoilerplateCard extends LitElement {
     const sensor = this.hass.states[this.config.entity];
     if (sensor && sensor.attributes.directives) {
       this.directives = sensor.attributes.directives;
+
+      if (this.dialog) {
+        this.dialog.setConfig(this.hass, this.directives);
+      }
     }
   }
 
@@ -204,8 +203,6 @@ export class BoilerplateCard extends LitElement {
     if (this.config.show_error) {
       return this._showError('error message');
     }
-
-    console.log("render component", this.directives)
 
     this._updateDirectivesFromSensor();
     
@@ -244,4 +241,4 @@ export class BoilerplateCard extends LitElement {
   }
 }
 
-customElements.define("donder-cloud-directives", BoilerplateCard);
+customElements.define("donder-cloud-directives", DonderCloudDirectives);

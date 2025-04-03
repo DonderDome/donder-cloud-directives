@@ -6,7 +6,7 @@ import {
   CSSResultGroup,
 } from 'lit';
 import { state } from "lit/decorators";
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 
 interface Directive {
   id: string;
@@ -23,7 +23,15 @@ interface DirectiveResponse {
 }
 
 export class DonderCloudDirectivesDialog extends LitElement {
-  @state() private hass!: HomeAssistant;
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    return document.createElement('donder-cloud-directives-editor');
+  }
+
+  public static getStubConfig(): Record<string, unknown> {
+    return {};
+  }
+  
+  @state() public hass!: HomeAssistant;
   @state() private directives: Directive[] = [];
   private newDirectiveMessage = '';
   private deletingDirectiveId: string | null = null;
