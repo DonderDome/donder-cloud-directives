@@ -143,7 +143,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   private _getStatusClass(status: string, directiveId: string): string {
     if (this.deletingDirectiveId === directiveId && this.isDeleting) {
-      return 'status-loading';
+      return 'rotating-icon';
     }
     switch (status) {
       case 'success':
@@ -236,6 +236,16 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .delete-icon {
         color: var(--secondary-text-color);
       }
+      .delete-icon.is-loading {
+        opacity: 0.5;
+      }
+      @keyframes spin {
+        100% { transform: rotate(360deg); }
+      }
+
+      .rotating-icon {
+        animation: spin 1s linear infinite;
+      }
     `;
   }
 
@@ -278,8 +288,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this._isRendered = true;
     const isLoading = this.isDeleting || this.isCreating;
 
-    console.log("is loading", isLoading);
-
     return html`
       <ha-dialog
           open
@@ -311,7 +319,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       `
                       : html`
                         <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
-                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon"></ha-icon>
+                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
                         </ha-button>
                       `
                     }

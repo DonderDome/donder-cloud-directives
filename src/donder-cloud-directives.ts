@@ -68,7 +68,6 @@ export class DonderCloudDirectives extends LitElement {
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
-    console.log("should update component", changedProps)
     if (!this.config) {
       return false;
     }
@@ -238,12 +237,12 @@ export class DonderCloudDirectives extends LitElement {
           </div>
           <div class="status-text">
             <div class="status-text-total">
-              You have a total of${status.total} directives
+              You have a total of ${status.total} directives
             </div>
             <div class="status-text-subtitle">
               ${status.warning > 0 
-                ? html`<span>${status.warning}</span> warnings`
-                : html`<span>${status.success}</span> successes`
+                ? html`<i>You have <span>${status.warning}</span> warnings</i>`
+                : html`<i>You have no warnings</i>`
               }
             </div>
           </div>
