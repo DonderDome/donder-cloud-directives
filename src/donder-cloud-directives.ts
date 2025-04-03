@@ -7,7 +7,6 @@ import {
   PropertyValues,
   CSSResultGroup,
 } from 'lit';
-import { state } from "lit/decorators";
 import {
   HomeAssistant,
   hasConfigOrEntityChanged,
@@ -52,9 +51,9 @@ export class BoilerplateCard extends LitElement {
     return {};
   }
 
-  @state() public hass!: HomeAssistant;
-  @state() private config!: DonderCloudDirectivesConfig;
-  @state() private directives: Directive[] = [];
+  public hass!: HomeAssistant;
+  private config!: DonderCloudDirectivesConfig;
+  private directives: Directive[] = [];
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
     if (!config) {
@@ -80,7 +79,7 @@ export class BoilerplateCard extends LitElement {
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
-  protected _hasConfigOrEntityChanged(element: any, changedProps: PropertyValues, forceUpdate: boolean): boolean {
+  protected _hasConfigOrEntityChanged(element: BoilerplateCard, changedProps: PropertyValues, forceUpdate: boolean): boolean {
     if (changedProps.has('config') || forceUpdate) {
       return true;
     }

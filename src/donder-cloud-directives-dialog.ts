@@ -5,7 +5,6 @@ import {
   css,
   CSSResultGroup,
 } from 'lit';
-import { state } from "lit/decorators";
 import { HomeAssistant } from 'custom-card-helpers';
 
 interface Directive {
@@ -16,11 +15,17 @@ interface Directive {
   created_at: string;
 }
 
+interface DirectiveResponse {
+  success: boolean;
+  result: Record<string, unknown>;
+  directives: Directive[];
+}
+
 export class DonderCloudDirectivesDialog extends LitElement {
-  @state() private hass!: HomeAssistant;
-  @state() private directives: Directive[] = [];
-  @state() private newDirectiveMessage = '';
-  @state() private deletingDirectiveId: string | null = null;
+  private hass!: HomeAssistant;
+  private directives: Directive[] = [];
+  private newDirectiveMessage = '';
+  private deletingDirectiveId: string | null = null;
 
   public setConfig(hass: HomeAssistant, directives: Directive[]): void {
     this.hass = hass;
@@ -34,7 +39,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
 
     try {
-      const response = await this.hass.callWS<{ success: boolean; result: any; directives: Directive[] }>({
+      const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/create_directive",
         message: this.newDirectiveMessage.trim(),
       });
@@ -52,7 +57,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   private async _deleteDirective(directiveId: string): Promise<void> {
     try {
-      const response = await this.hass.callWS<{ success: boolean; result: any }>({
+      const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/delete_directive",
         directive_id: directiveId,
       });

@@ -160,6 +160,10 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     this.ripple.disabled = true;
     this.style.display = 'none';
   }
+
+  private _handleClick(): void {
+    this.dispatchEvent(new CustomEvent('action', { detail: {} }));
+  }
 }
 
 // DONE You need to replace all instances of "action-handler-jarvis-widget-template" with "action-handler-<your card name>"

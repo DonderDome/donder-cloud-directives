@@ -6,7 +6,7 @@ import {
   css,
   CSSResultGroup,
 } from 'lit';
-import { customElement } from 'lit/decorators';
+import { customElement, property, state } from 'lit/decorators';
 import {
   HomeAssistant,
   LovelaceCardEditor,
@@ -16,28 +16,8 @@ import type { DonderCloudDirectivesConfig } from './types';
 
 @customElement('donder-cloud-directives-editor')
 export class DonderCloudDirectivesEditor extends LitElement implements LovelaceCardEditor {
-  private _config: DonderCloudDirectivesConfig = {
-    type: 'donder-cloud-directives',
-    name: '',
-    entities: [],
-  };
-  private _hass: HomeAssistant = {} as HomeAssistant;
-
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-  }
-
-  get hass(): HomeAssistant {
-    return this._hass;
-  }
-
-  set config(config: DonderCloudDirectivesConfig) {
-    this._config = config;
-  }
-
-  get config(): DonderCloudDirectivesConfig {
-    return this._config;
-  }
+  @property({ attribute: false }) public hass?: HomeAssistant;
+  @state() private _config?: DonderCloudDirectivesConfig;
 
   public setConfig(config: DonderCloudDirectivesConfig): void {
     this._config = config;
@@ -57,39 +37,33 @@ export class DonderCloudDirectivesEditor extends LitElement implements LovelaceC
     }
 
     return html`
-      <ha-form>
-        <ha-textfield
-          label="Name"
-          .value=${this._config.name || ''}
-          .configValue=${'name'}
-          @input=${this._valueChanged}
-        ></ha-textfield>
-      </ha-form>
+      <ha-form
+        .data=${this._config}
+        .schema=${[
+          {
+            type: 'string',
+            name: 'name',
+            label: 'Name',
+            required: true,
+          },
+          {
+            type: 'string',
+            name: 'entity',
+            label: 'Entity',
+            required: true,
+          },
+        ]}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
     `;
   }
 
-  private _valueChanged(ev: Event): void {
-    if (!this._config || !this.hass) {
+  private _valueChanged(ev: CustomEvent): void {
+    const config = ev.detail.value;
+    if (!config) {
       return;
     }
-
-    const target = ev.target as HTMLElement;
-    if (!target.hasAttribute('configValue')) {
-      return;
-    }
-
-    const configValue = target.getAttribute('configValue')!;
-    const value = (target as any).value;
-
-    if (this._config[configValue] === value) {
-      return;
-    }
-
-    this._config = {
-      ...this._config,
-      [configValue]: value,
-    };
-
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+    this._config = config;
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config } }));
   }
 }
