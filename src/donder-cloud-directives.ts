@@ -114,14 +114,6 @@ export class BoilerplateCard extends LitElement {
     `;
   }
 
-  private _showNotification(message: string, type: 'success' | 'error' | 'warning'): void {
-    this.hass.callService("persistent_notification", "create", {
-      title: "Donder Cloud",
-      message,
-      notification_id: `donder_cloud_${type}`,
-    });
-  }
-
   private _getStatusCounts(): { success: number; warning: number; error: number } {
     return this.directives.reduce(
       (counts, directive) => {
@@ -133,19 +125,21 @@ export class BoilerplateCard extends LitElement {
   }
 
   private _openDialog(): void {
-    const dialog = document.createElement('ha-dialog');
-    dialog.setAttribute('heading', 'Donder Cloud Directives');
-    dialog.setAttribute('hideActions', '');
+    // const dialog = document.createElement('ha-dialog');
+    // dialog.setAttribute('heading', 'Donder Cloud Directives');
+    // dialog.setAttribute('hideActions', '');
     
-    const content = document.createElement('donder-cloud-directives-dialog') as DonderCloudDirectivesDialog;
-    content.setConfig(this.hass, this.directives);
+    // const content = document.createElement('donder-cloud-directives-dialog') as DonderCloudDirectivesDialog;
+    // content.setConfig(this.hass, this.directives);
     
-    dialog.appendChild(content);
-    document.body.appendChild(dialog);
+    // dialog.appendChild(content);
+    // document.body.appendChild(dialog);
     
-    dialog.addEventListener('closed', () => {
-      document.body.removeChild(dialog);
-    });
+    // dialog.addEventListener('closed', () => {
+    //   document.body.removeChild(dialog);
+    // });
+    const dialog = new DonderCloudDirectivesDialog();
+    dialog.show();
   }
 
   static get styles(): CSSResultGroup {
@@ -212,7 +206,7 @@ export class BoilerplateCard extends LitElement {
     this._updateDirectivesFromSensor();
   }
 
-  protected render(): TemplateResult | void {
+  protected override render(): TemplateResult | void {
     if (this.config.show_warning) {
       return this._showWarning('warning message');
     }
