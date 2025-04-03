@@ -196,7 +196,10 @@ export const actionHandler = directive(
       return noChange;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    render(_options?: ActionHandlerOptions) {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
+    render(_options?: ActionHandlerOptions) {
+      // This method is required by the Directive interface but doesn't need to do anything
+      return noChange;
+    }
   },
 );
