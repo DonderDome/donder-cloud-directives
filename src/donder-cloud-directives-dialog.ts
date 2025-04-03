@@ -29,8 +29,14 @@ export class DonderCloudDirectivesDialog extends LitElement {
   private _isRendered = false;
 
   public setConfig(hass: HomeAssistant, directives: Directive[]): void {
+    console.log("set config dialog", hass, directives)
     this.hass = hass;
     this.directives = directives;
+  }
+
+  protected shouldUpdate(changedProps: any): boolean {
+    console.log("should update dialog", changedProps)
+    return true;
   }
 
   private async _createDirective(): Promise<void> {
@@ -291,14 +297,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
         </ha-dialog>
     `;
   }
-  
-  // private _closeDialog(): void {
-  //   const event = new CustomEvent('closed', {
-  //     bubbles: true,
-  //     composed: true,
-  //   });
-  //   this.dispatchEvent(event);
-  // }
 }
 
 customElements.define("donder-cloud-directives-dialog", DonderCloudDirectivesDialog); 

@@ -72,6 +72,7 @@ export class BoilerplateCard extends LitElement {
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
+    console.log("should update component", changedProps)
     if (!this.config) {
       return false;
     }
@@ -125,19 +126,6 @@ export class BoilerplateCard extends LitElement {
   }
 
   private _openDialog(): void {
-    // const dialog = document.createElement('ha-dialog');
-    // dialog.setAttribute('heading', 'Donder Cloud Directives');
-    // dialog.setAttribute('hideActions', '');
-    
-    // const content = document.createElement('donder-cloud-directives-dialog') as DonderCloudDirectivesDialog;
-    // content.setConfig(this.hass, this.directives);
-    
-    // dialog.appendChild(content);
-    // document.body.appendChild(dialog);
-    
-    // dialog.addEventListener('closed', () => {
-    //   document.body.removeChild(dialog);
-    // });
     const dialog = new DonderCloudDirectivesDialog();
     dialog.setConfig(this.hass, this.directives);
     dialog.show();
@@ -246,9 +234,6 @@ export class BoilerplateCard extends LitElement {
               <ha-icon icon="mdi:cog"></ha-icon>
               Manage Directives
             </ha-button>
-            <ha-dialog id="myDialog" heading="Popup Title">
-              <p>This is the content of the popup.</p>
-            </ha-dialog>
           </div>
         </div>
       </ha-card>
