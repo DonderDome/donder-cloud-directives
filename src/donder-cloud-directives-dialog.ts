@@ -117,6 +117,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         padding: 16px;
         max-width: 600px;
         width: 100%;
+        --spacing: 12px;
       }
       .directive-list {
         margin-bottom: 20px;
@@ -134,6 +135,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .directive-content {
         flex-grow: 1;
         margin-right: 10px;
+        display: flex;
       }
       .directive-message {
         margin-bottom: 5px;
@@ -145,15 +147,17 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .directive-actions {
         position: absolute;
+        width: 50px;
         right: 0;
         top: 0;
         display: flex;
         gap: 10px;
-        background-image: linear-gradient(
-          to right, 
-          color-mix(in srgb, var(--mdc-theme-surface) 0%, transparent), 
-          color-mix(in srgb, var(--mdc-theme-surface) 100%, transparent)
-        );
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--mdc-theme-surface) 60%);
+        transition: width 0.3s ease-in-out;
+        justify-content: flex-end;
+      }
+      .directive-actions.expanded {
+        width: 300px;
       }
       .status-success {
         color: var(--success-color);
@@ -243,7 +247,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       ${directive.message}  
                     </div>                    
                   </div>
-                  <div class="directive-actions">
+                  <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
                     ${this.deletingDirectiveId === directive.id
                       ? html`
                         <div class="confirm-delete">

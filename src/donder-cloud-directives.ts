@@ -130,6 +130,9 @@ export class DonderCloudDirectives extends LitElement {
 
   static get styles(): CSSResultGroup {
     return css`
+      :host {
+        --spacing: 12px;
+      }
       .type-custom-donder-cloud-directives {
         height: 100%;
         width: 100%;
