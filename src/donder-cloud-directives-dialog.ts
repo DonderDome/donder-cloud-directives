@@ -141,10 +141,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
-  private _getStatusClass(status: string, directiveId: string): string {
-    if (this.deletingDirectiveId === directiveId && this.isDeleting) {
-      return 'rotating-icon';
-    }
+  private _getStatusClass(status: string): string {
     switch (status) {
       case 'success':
         return 'status-success';
@@ -299,10 +296,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
               ${this.directives.map(directive => html`
                 <div class="directive-item">
                   <div class="directive-content">
-                    <div class="directive-status-icon">
+                    <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
                       <ha-icon
                         icon=${this._getStatusIcon(directive.status, directive.id)}
-                        class=${this._getStatusClass(directive.status, directive.id)}
+                        class=${this._getStatusClass(directive.status)}
                       ></ha-icon>
                     </div>
                     <div class="directive-message">
