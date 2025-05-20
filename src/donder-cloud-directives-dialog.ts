@@ -64,6 +64,29 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
+  private _propagateVisionSync() {
+    if (this.hass) {
+      this.hass.callService('mqtt', 'publish', {
+        topic: 'direktive-vision-ha-addon/fetch_vision_entities',
+        payload: '{}',
+        qos: 0,
+        retain: false,
+      })
+      .then(() => {
+        console.log('MQTT message published to trigger entity sync.');
+        // Optionally show some feedback to the user, e.g., a toast notification
+        // this.hass.notification('Sync command sent!'); 
+      })
+      .catch(err => {
+        console.error('Error publishing MQTT message:', err);
+        // Optionally show error feedback
+        // this.hass.notification('Error sending sync command.', 'error');
+      });
+    } else {
+      console.error('Home Assistant object (hass) is not available.');
+    }
+  }
+
   private async _createDirective(): Promise<void> {
     if (this.isDeleting || this.isCreating) {
       return;
@@ -86,6 +109,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         this.directives = response.directives;
         this.newDirectiveMessage = '';
         this._showNotification("Directive created successfully", "success");
+        this._propagateVisionSync();
       }
     } catch (err) {
       console.error("Error creating directive:", err);
@@ -110,6 +134,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         this.deletingDirectiveId = null;
         this._showNotification("Directive deleted successfully", "success");
         this.isDeleting = false;
+        this._propagateVisionSync();
       }
     } catch (err) {
       console.error("Error deleting directive:", err);
