@@ -15,6 +15,7 @@ interface Directive {
   status: 'success' | 'warning' | 'error';
   scenario_id: string;
   created_at: string;
+  active: boolean;
 }
 
 interface DirectiveResponse {
@@ -143,6 +144,29 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
+  private async _downloadDirective(directiveId: string): Promise<void> {
+    // Placeholder for downloading/activating the directive
+    console.log('Download/activate directive:', directiveId);
+    // try {
+    //   this.isCreating = true; // or a new state like isDownloading
+    //   const response = await this.hass.callWS<DirectiveResponse>({
+    //     type: "donder_cloud/activate_directive", // This is an assumed API endpoint
+    //     directive_id: directiveId,
+    //   });
+      
+    //   if (response.success) {
+    //     this.isCreating = false;
+    //     this.directives = response.directives; // Assuming the response updates the list
+    //     this._showNotification("Directive activated successfully", "success");
+    //     this._propagateVisionSync();
+    //   }
+    // } catch (err) {
+    //   console.error("Error activating directive:", err);
+    //   this.isCreating = false;
+    //   this._showNotification("Error activating directive", "error");
+    // }
+  }
+
   private _showNotification(message: string, type: 'success' | 'error' | 'warning'): void {
     this.hass.callService("persistent_notification", "create", {
       title: "Donder Cloud",
@@ -151,7 +175,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
     });
   }
 
-  private _getStatusIcon(status: string, directiveId: string): string {
+  private _getStatusIcon(status: string, directiveId: string, isActive: boolean): string {
+    if (!isActive) {
+      return 'mdi:auto-awesome';
+    }
     if (this.deletingDirectiveId === directiveId && this.isDeleting) {
       return 'mdi:loading';
     }
@@ -310,6 +337,46 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this._isRendered = true;
     const isLoading = this.isDeleting || this.isCreating;
 
+    const activeDirectives = this.directives.filter(d => d.active !== false);
+    const inactiveDirectives = this.directives.filter(d => d.active === false);
+
+    const renderDirectiveItem = (directive: Directive) => html`
+      <div class="directive-item">
+        <div class="directive-content">
+          <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
+            <ha-icon
+              icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
+              class=${this._getStatusClass(directive.status)}
+            ></ha-icon>
+          </div>
+          <div class="directive-message">
+            ${directive.message}  
+          </div>                    
+        </div>
+        <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
+          ${this.deletingDirectiveId === directive.id && directive.active
+            ? html`
+              <div class="confirm-delete">
+                <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
+                <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
+              </div>
+            `
+            : directive.active
+              ? html`
+              <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
+                <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
+              </ha-button>
+            `
+              : html`
+              <ha-button @click=${() => this._downloadDirective(directive.id)} ?disabled=${isLoading}>
+                <ha-icon icon="mdi:cloud-download" class="delete-icon"></ha-icon>
+              </ha-button>
+            `
+          }
+        </div>
+      </div>
+    `;
+
     return html`
       <ha-dialog
           open
@@ -318,36 +385,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
         >
           <div class="content">
             <div class="directive-list">
-              ${this.directives.map(directive => html`
-                <div class="directive-item">
-                  <div class="directive-content">
-                    <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
-                      <ha-icon
-                        icon=${this._getStatusIcon(directive.status, directive.id)}
-                        class=${this._getStatusClass(directive.status)}
-                      ></ha-icon>
-                    </div>
-                    <div class="directive-message">
-                      ${directive.message}  
-                    </div>                    
-                  </div>
-                  <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
-                    ${this.deletingDirectiveId === directive.id
-                      ? html`
-                        <div class="confirm-delete">
-                          <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
-                          <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
-                        </div>
-                      `
-                      : html`
-                        <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
-                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
-                        </ha-button>
-                      `
-                    }
-                  </div>
-                </div>
-              `)}
+              ${inactiveDirectives.map(renderDirectiveItem)}
+              ${activeDirectives.map(renderDirectiveItem)}
             </div>
             <div class="new-directive">
               <input
