@@ -29,8 +29,11 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() private config!: DonderCloudDirectivesConfig;
   @state() private directives: Directive[] = [];
   @state() deletingDirectiveId: string | null = null;
+  @state() downloadingDirectiveId: string | null = null;
   @state() isDeleting = false;
+  @state() isDownloading = false;
   @state() isCreating = false;
+
   private newDirectiveMessage = '';
   private _isRendered = false;
 
@@ -89,7 +92,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private async _createDirective(): Promise<void> {
-    if (this.isDeleting || this.isCreating) {
+    if (this.isDeleting || this.isCreating || this.isDownloading) {
       return;
     }
 
@@ -120,7 +123,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
-    if (this.isDeleting || this.isCreating) {
+    if (this.isDeleting || this.isCreating || this.isDownloading) {
       return;
     }
 
@@ -145,26 +148,28 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private async _downloadDirective(directiveId: string): Promise<void> {
-    // Placeholder for downloading/activating the directive
-    console.log('Download/activate directive:', directiveId);
-    // try {
-    //   this.isCreating = true; // or a new state like isDownloading
-    //   const response = await this.hass.callWS<DirectiveResponse>({
-    //     type: "donder_cloud/activate_directive", // This is an assumed API endpoint
-    //     directive_id: directiveId,
-    //   });
+    if (this.isDeleting || this.isCreating || this.isDownloading) {
+      return;
+    }
+
+    try {
+      this.isDownloading = true;
+      const response = await this.hass.callWS<DirectiveResponse>({
+        type: "donder_cloud/dowload_directive",
+        directive_id: directiveId,
+      });
       
-    //   if (response.success) {
-    //     this.isCreating = false;
-    //     this.directives = response.directives; // Assuming the response updates the list
-    //     this._showNotification("Directive activated successfully", "success");
-    //     this._propagateVisionSync();
-    //   }
-    // } catch (err) {
-    //   console.error("Error activating directive:", err);
-    //   this.isCreating = false;
-    //   this._showNotification("Error activating directive", "error");
-    // }
+      if (response.success) {
+        this.isDownloading = false;
+        this.directives = response.directives;
+        this._showNotification("Directive downloaded successfully", "success");
+        this._propagateVisionSync();
+      }
+    } catch (err) {
+      console.error("Error downloading directive:", err);
+      this.isDownloading = false;
+      this._showNotification("Error downloading directive", "error");
+    }
   }
 
   private _showNotification(message: string, type: 'success' | 'error' | 'warning'): void {
@@ -175,12 +180,17 @@ export class DonderCloudDirectivesDialog extends LitElement {
     });
   }
 
-  private _getStatusIcon(status: string, directiveId: string, isActive: boolean): string {
-    if (!isActive) {
-      return 'mdi:auto-awesome';
-    }
+  private _getStatusIcon(status: string, directiveId: string, active: boolean): string {
     if (this.deletingDirectiveId === directiveId && this.isDeleting) {
       return 'mdi:loading';
+    }
+
+    if (this.downloadingDirectiveId === directiveId && this.isDownloading) {
+      return 'mdi:loading';
+    }
+
+    if (active === false) {
+      return 'mdi:auto-awesome';
     }
 
     switch (status) {
@@ -340,43 +350,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
     const activeDirectives = this.directives.filter(d => d.active !== false);
     const inactiveDirectives = this.directives.filter(d => d.active === false);
 
-    const renderDirectiveItem = (directive: Directive) => html`
-      <div class="directive-item">
-        <div class="directive-content">
-          <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
-            <ha-icon
-              icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
-              class=${this._getStatusClass(directive.status)}
-            ></ha-icon>
-          </div>
-          <div class="directive-message">
-            ${directive.message}  
-          </div>                    
-        </div>
-        <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
-          ${this.deletingDirectiveId === directive.id && directive.active
-            ? html`
-              <div class="confirm-delete">
-                <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
-                <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
-              </div>
-            `
-            : directive.active
-              ? html`
-              <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
-                <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
-              </ha-button>
-            `
-              : html`
-              <ha-button @click=${() => this._downloadDirective(directive.id)} ?disabled=${isLoading}>
-                <ha-icon icon="mdi:cloud-download" class="delete-icon"></ha-icon>
-              </ha-button>
-            `
-          }
-        </div>
-      </div>
-    `;
-
     return html`
       <ha-dialog
           open
@@ -385,8 +358,66 @@ export class DonderCloudDirectivesDialog extends LitElement {
         >
           <div class="content">
             <div class="directive-list">
-              ${inactiveDirectives.map(renderDirectiveItem)}
-              ${activeDirectives.map(renderDirectiveItem)}
+            ${inactiveDirectives.map(directive => html`
+                <div class="directive-item">
+                  <div class="directive-content">
+                    <div class=${`directive-status-icon ${this.downloadingDirectiveId === directive.id && this.isDownloading ? 'rotating-icon' : ''}`}>
+                      <ha-icon
+                        icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
+                        class=${this._getStatusClass(directive.status)}
+                      ></ha-icon>
+                    </div>
+                    <div class="directive-message">
+                      ${directive.message}  
+                    </div>                    
+                  </div>
+                  <div class="directive-actions ${this.downloadingDirectiveId === directive.id ? 'expanded' : ''}">
+                    ${this.downloadingDirectiveId === directive.id
+                      ? html`
+                        <div class="confirm-delete">
+                          <ha-button @click=${() => this._downloadDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
+                          <ha-button @click=${() => this.downloadingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
+                        </div>
+                      `
+                      : html`
+                        <ha-button @click=${() => this.downloadingDirectiveId = directive.id} ?disabled=${isLoading}>
+                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
+                        </ha-button>
+                      `
+                    }
+                  </div>
+                </div>
+              `)}
+              ${activeDirectives.map(directive => html`
+                <div class="directive-item">
+                  <div class="directive-content">
+                    <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
+                      <ha-icon
+                        icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
+                        class=${this._getStatusClass(directive.status)}
+                      ></ha-icon>
+                    </div>
+                    <div class="directive-message">
+                      ${directive.message}  
+                    </div>                    
+                  </div>
+                  <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
+                    ${this.deletingDirectiveId === directive.id
+                      ? html`
+                        <div class="confirm-delete">
+                          <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
+                          <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
+                        </div>
+                      `
+                      : html`
+                        <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
+                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
+                        </ha-button>
+                      `
+                    }
+                  </div>
+                </div>
+              `)}
             </div>
             <div class="new-directive">
               <input
