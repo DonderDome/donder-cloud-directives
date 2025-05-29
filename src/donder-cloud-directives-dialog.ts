@@ -16,6 +16,9 @@ interface Directive {
   scenario_id: string;
   created_at: string;
   active: boolean;
+  discovery: boolean;
+  follow_up: string | null;
+  review_summary: string | null;
 }
 
 interface DirectiveResponse {
@@ -33,6 +36,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() isDeleting = false;
   @state() isDownloading = false;
   @state() isCreating = false;
+  @state() private selectedDirective: Directive | null = null;
+  @state() private showDetailsView = false;
 
   private newDirectiveMessage = '';
   private _isRendered = false;
@@ -227,6 +232,53 @@ export class DonderCloudDirectivesDialog extends LitElement {
         margin-bottom: 20px;
         max-height: 400px;
         overflow-y: auto;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .directive-list.hidden {
+        opacity: 0;
+        transform: translateX(-20px);
+        pointer-events: none;
+      }
+      .directive-details {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 16px;
+        background: var(--mdc-theme-surface);
+        opacity: 0;
+        transform: translateX(20px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        pointer-events: none;
+      }
+      .directive-details.visible {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+      .back-button {
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: var(--primary-text-color);
+      }
+      .directive-detail-content {
+        margin-top: 16px;
+      }
+      .detail-item {
+        margin-bottom: 12px;
+      }
+      .detail-label {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+      }
+      .detail-value {
+        font-size: 14px;
+        color: var(--primary-text-color);
       }
       .directive-item {
         display: flex;
@@ -292,10 +344,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
         justify-content: flex-end;
         margin-top: 16px;
       }
-      .delete-icon {
+      .delete-icon, .download-icon {
         color: var(--secondary-text-color);
       }
-      .delete-icon.is-loading {
+      .delete-icon.is-loading, .download-icon.is-loading {
         opacity: 0.5;
       }
       @keyframes spin {
@@ -304,6 +356,15 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
       .rotating-icon {
         animation: spin 1s linear infinite;
+      }
+      .directive-list-subtitle {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--secondary-text-color);
+      }
+      .create-directive-button {
+        flex: 0 1 70px;
       }
     `;
   }
@@ -347,8 +408,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this._isRendered = true;
     const isLoading = this.isDeleting || this.isCreating || this.isDownloading;
 
-    const activeDirectives = this.directives.filter(d => d.active !== false);
-    const inactiveDirectives = this.directives.filter(d => d.active === false);
+    const activeDirectives = this.directives.filter(d => d.discovery === false);
+    const inactiveDirectives = this.directives.filter(d => d.discovery !== true);
 
     return html`
       <ha-dialog
@@ -357,9 +418,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
           hideActions
         >
           <div class="content">
-            <div class="directive-list">
-            ${inactiveDirectives.map(directive => html`
-                <div class="directive-item">
+            <div class="directive-list ${this.showDetailsView ? 'hidden' : ''}">
+              <div class="directive-list-subtitle">Suggested Directives</div>
+              ${inactiveDirectives.map(directive => html`
+                <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
                     <div class=${`directive-status-icon ${this.downloadingDirectiveId === directive.id && this.isDownloading ? 'rotating-icon' : ''}`}>
                       <ha-icon
@@ -375,12 +437,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
                     ${this.downloadingDirectiveId === directive.id
                       ? html`
                         <div class="confirm-delete">
-                          <ha-button @click=${() => this._downloadDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
-                          <ha-button @click=${() => this.downloadingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
+                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this._downloadDirective(directive.id); }} ?disabled=${isLoading}>Confirm</ha-button>
+                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this.downloadingDirectiveId = null; }} ?disabled=${isLoading}>Cancel</ha-button>
                         </div>
                       `
                       : html`
-                        <ha-button @click=${() => this.downloadingDirectiveId = directive.id} ?disabled=${isLoading}>
+                        <ha-button @click=${(e: Event) => { e.stopPropagation(); this.downloadingDirectiveId = directive.id; }} ?disabled=${isLoading}>
                           <ha-icon icon="mdi:cloud-download-outline" class="download-icon is-loading"></ha-icon>
                         </ha-button>
                       `
@@ -388,8 +450,11 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   </div>
                 </div>
               `)}
+            </div>
+            <div class="directive-list ${this.showDetailsView ? 'hidden' : ''}">
+              <div class="directive-list-subtitle">Active Directives</div>
               ${activeDirectives.map(directive => html`
-                <div class="directive-item">
+                <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
                     <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
                       <ha-icon
@@ -405,12 +470,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
                     ${this.deletingDirectiveId === directive.id
                       ? html`
                         <div class="confirm-delete">
-                          <ha-button @click=${() => this._deleteDirective(directive.id)} ?disabled=${isLoading}>Confirm</ha-button>
-                          <ha-button @click=${() => this.deletingDirectiveId = null} ?disabled=${isLoading}>Cancel</ha-button>
+                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this._deleteDirective(directive.id); }} ?disabled=${isLoading}>Confirm</ha-button>
+                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this.deletingDirectiveId = null; }} ?disabled=${isLoading}>Cancel</ha-button>
                         </div>
                       `
                       : html`
-                        <ha-button @click=${() => this.deletingDirectiveId = directive.id} ?disabled=${isLoading}>
+                        <ha-button @click=${(e: Event) => { e.stopPropagation(); this.deletingDirectiveId = directive.id; }} ?disabled=${isLoading}>
                           <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
                         </ha-button>
                       `
@@ -419,7 +484,41 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 </div>
               `)}
             </div>
-            <div class="new-directive">
+            <div class="directive-details ${this.showDetailsView ? 'visible' : ''}">
+              ${this.selectedDirective ? html`
+                <div class="back-button" @click=${this._hideDirectiveDetails}>
+                  <ha-icon icon="mdi:arrow-left"></ha-icon>
+                  <span>Back to Directives</span>
+                </div>
+                <div class="directive-detail-content">
+                  <div class="detail-item">
+                    <div class="detail-label">Message</div>
+                    <div class="detail-value">${this.selectedDirective.message}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">${this.selectedDirective.status}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Created At</div>
+                    <div class="detail-value">${new Date(this.selectedDirective.created_at).toLocaleString()}</div>
+                  </div>
+                  ${this.selectedDirective.follow_up ? html`
+                    <div class="detail-item">
+                      <div class="detail-label">Follow Up</div>
+                      <div class="detail-value">${this.selectedDirective.follow_up}</div>
+                    </div>
+                  ` : ''}
+                  ${this.selectedDirective.review_summary ? html`
+                    <div class="detail-item">
+                      <div class="detail-label">Review Summary</div>
+                      <div class="detail-value">${this.selectedDirective.review_summary}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+            <div class="new-directive ${this.showDetailsView ? 'hidden' : ''}">
               <input
                 type="text"
                 class="new-directive-input"
@@ -442,6 +541,16 @@ export class DonderCloudDirectivesDialog extends LitElement {
           </div>
         </ha-dialog>
     `;
+  }
+
+  private _showDirectiveDetails(directive: Directive): void {
+    this.selectedDirective = directive;
+    this.showDetailsView = true;
+  }
+
+  private _hideDirectiveDetails(): void {
+    this.showDetailsView = false;
+    this.selectedDirective = null;
   }
 }
 
