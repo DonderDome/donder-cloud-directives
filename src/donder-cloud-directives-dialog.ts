@@ -190,7 +190,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
 
     if (active === false) {
-      return 'mdi:auto-awesome';
+      return 'mdi:creation-outline';
     }
 
     switch (status) {
@@ -345,7 +345,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   protected render(): TemplateResult {
     this._isRendered = true;
-    const isLoading = this.isDeleting || this.isCreating;
+    const isLoading = this.isDeleting || this.isCreating || this.isDownloading;
 
     const activeDirectives = this.directives.filter(d => d.active !== false);
     const inactiveDirectives = this.directives.filter(d => d.active === false);
@@ -381,7 +381,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       `
                       : html`
                         <ha-button @click=${() => this.downloadingDirectiveId = directive.id} ?disabled=${isLoading}>
-                          <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
+                          <ha-icon icon="mdi:cloud-download-outline" class="download-icon is-loading"></ha-icon>
                         </ha-button>
                       `
                     }
@@ -432,7 +432,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 placeholder="Enter new directive..."
                 ?disabled=${isLoading}
               />
-              <ha-button @click=${() => this._createDirective()} ?disabled=${isLoading}>Create</ha-button>
+              <div class=${`create-directive-button ${this.isCreating ? 'rotating-icon' : ''}`}>
+                ${this.isCreating
+                  ? html`<ha-icon icon="mdi:loading" class="rotating-icon"></ha-icon>`
+                  : html`<ha-button @click=${() => this._createDirective()} ?disabled=${isLoading}>Create</ha-button>`
+                }
+              </div>
             </div>
           </div>
         </ha-dialog>
