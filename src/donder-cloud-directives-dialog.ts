@@ -241,6 +241,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .directive-details {
         position: absolute;
+        width: 86%;
         top: 0;
         left: 0;
         right: 0;
@@ -266,7 +267,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         color: var(--primary-text-color);
       }
       .directive-detail-content {
-        margin-top: 16px;
+        margin-top: 26px;
       }
       .detail-item {
         margin-bottom: 12px;
@@ -287,6 +288,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         padding: 10px;
         padding-right: 100px;
         border-bottom: 1px solid var(--divider-color);
+        cursor: pointer;
       }
       .directive-item:last-child {
         border-bottom: none;
@@ -300,6 +302,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         margin-bottom: 5px;
         max-width: 350px;
         flex-wrap: wrap;
+        padding-top: 3px;
       }
       .directive-status-icon {
         margin-right: var(--spacing);
@@ -308,7 +311,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         position: absolute;
         width: 0%;
         right: 0;
-        top: 0;
+        top: 5px;
         display: flex;
         gap: 10px;
         background-image: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--mdc-theme-surface) 60%);
@@ -365,6 +368,13 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .create-directive-button {
         flex: 0 1 70px;
+      }
+      .message-icon {
+        margin-left: 10px;
+        color: var(--secondary-text-color);
+      }
+      .muted {
+        color: var(--secondary-text-color);
       }
     `;
   }
@@ -431,6 +441,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                     </div>
                     <div class="directive-message">
                       ${directive.message}  
+                      <ha-icon icon="mdi:chevron-right" class="message-icon"></ha-icon>
                     </div>                    
                   </div>
                   <div class="directive-actions ${this.downloadingDirectiveId === directive.id ? 'expanded' : ''}">
@@ -483,6 +494,13 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   </div>
                 </div>
               `)}
+              ${activeDirectives.length === 0 ? html`
+                <div class="directive-item">
+                  <div class="directive-content">
+                    <div class="directive-message muted">No active directives</div>
+                  </div>
+                </div>
+              ` : ''}
             </div>
             <div class="directive-details ${this.showDetailsView ? 'visible' : ''}">
               ${this.selectedDirective ? html`
