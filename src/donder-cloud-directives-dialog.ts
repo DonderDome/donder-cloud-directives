@@ -12,6 +12,8 @@ import type { DonderCloudDirectivesConfig } from './types';
 interface Directive {
   id: string;
   message: string;
+  title: string;
+  summary: string;
   status: 'success' | 'warning' | 'error';
   scenario_id: string;
   created_at: string;
@@ -511,7 +513,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 <div class="directive-detail-content">
                   <div class="detail-item">
                     <div class="detail-label">Message</div>
-                    <div class="detail-value">${this.selectedDirective.message}</div>
+                    <div class="detail-value">${this.selectedDirective.title}</div>
                   </div>
                   <div class="detail-item">
                     <div class="detail-label">Status</div>
@@ -520,6 +522,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   <div class="detail-item">
                     <div class="detail-label">Created At</div>
                     <div class="detail-value">${new Date(this.selectedDirective.created_at).toLocaleString()}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Summary</div>
+                    <div class="detail-value">${this.selectedDirective.summary}</div>
                   </div>
                   ${this.selectedDirective.follow_up ? html`
                     <div class="detail-item">
