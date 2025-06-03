@@ -381,6 +381,7 @@ const rt=(t,e)=>"method"===e.kind&&e.descriptor&&!("value"in e.descriptor)?{...e
 
                   <div class="conversation-container">
                     <div class="message-list">
+                      ${console.log(this.selectedDirective)}
                       ${null===(t=this.selectedDirective.messages)||void 0===t?void 0:t.map((t=>T`
                         <div class="message ${t.role}">
                           ${"question"===t.content.type?T`
@@ -407,7 +408,7 @@ const rt=(t,e)=>"method"===e.kind&&e.descriptor&&!("value"in e.descriptor)?{...e
                       />
                       <ha-button
                         @click=${()=>this._sendMessage()}
-                        ?disabled=${!this.conversationInput.trim()||this.isSendingMessage}
+                        ?disabled=${this.isSendingMessage}
                       >
                         ${this.isSendingMessage?T`
                           <ha-icon icon="mdi:loading" class="rotating-icon"></ha-icon>
@@ -434,7 +435,7 @@ const rt=(t,e)=>"method"===e.kind&&e.descriptor&&!("value"in e.descriptor)?{...e
             </div>
           </div>
         </ha-dialog>
-    `}_showDirectiveDetails(t){this.selectedDirective=t,this.showDetailsView=!0,this._loadConversation(t.id)}_hideDirectiveDetails(){this.showDetailsView=!1,this.selectedDirective=null}}t([dt()],pt.prototype,"hass",void 0),t([dt()],pt.prototype,"config",void 0),t([dt()],pt.prototype,"directives",void 0),t([dt()],pt.prototype,"deletingDirectiveId",void 0),t([dt()],pt.prototype,"downloadingDirectiveId",void 0),t([dt()],pt.prototype,"isDeleting",void 0),t([dt()],pt.prototype,"isDownloading",void 0),t([dt()],pt.prototype,"isCreating",void 0),t([dt()],pt.prototype,"selectedDirective",void 0),t([dt()],pt.prototype,"showDetailsView",void 0),t([dt()],pt.prototype,"conversationInput",void 0),t([dt()],pt.prototype,"isSendingMessage",void 0),customElements.define("donder-cloud-directives-dialog",pt),console.info("%c  DONDER-CLOUD-DIRECTIVES \n%c  version: 1.7.4  ","color: orange; font-weight: bold; background: black","color: white; font-weight: bold; background: dimgray"),window.customCards=window.customCards||[],window.customCards.push({type:"donder-cloud-directives",name:"Donder Cloud Directives",description:"A custom card for managing directives"});class gt extends ot{constructor(){super(...arguments),this.directives=[],this.dialog=null}static async getConfigElement(){return document.createElement("donder-cloud-directives-editor")}static getStubConfig(){return{}}setConfig(t){if(!t)throw new Error("Invalid configuration");this.config=Object.assign(Object.assign({},t),{name:"Donder Cloud Directives",entity:"sensor.donder_directives"})}shouldUpdate(t){return!!this.config&&(this._hasConfigOrEntityChanged(this,t,!1)||vt(this,t,!1))}_hasConfigOrEntityChanged(t,e,i){if(e.has("config")||i)return!0;const s=e.get("hass");if(s&&this.config.entity){return s.states[this.config.entity].state!==t.hass.states[this.config.entity].state}return!1}_showWarning(t){return T`
+    `}_showDirectiveDetails(t){this.selectedDirective=t,this.showDetailsView=!0,this._loadConversation(t.id)}_hideDirectiveDetails(){this.showDetailsView=!1,this.selectedDirective=null}}t([dt()],pt.prototype,"hass",void 0),t([dt()],pt.prototype,"config",void 0),t([dt()],pt.prototype,"directives",void 0),t([dt()],pt.prototype,"deletingDirectiveId",void 0),t([dt()],pt.prototype,"downloadingDirectiveId",void 0),t([dt()],pt.prototype,"isDeleting",void 0),t([dt()],pt.prototype,"isDownloading",void 0),t([dt()],pt.prototype,"isCreating",void 0),t([dt()],pt.prototype,"selectedDirective",void 0),t([dt()],pt.prototype,"showDetailsView",void 0),t([dt()],pt.prototype,"conversationInput",void 0),t([dt()],pt.prototype,"isSendingMessage",void 0),customElements.define("donder-cloud-directives-dialog",pt),console.info("%c  DONDER-CLOUD-DIRECTIVES \n%c  version: 1.7.5  ","color: orange; font-weight: bold; background: black","color: white; font-weight: bold; background: dimgray"),window.customCards=window.customCards||[],window.customCards.push({type:"donder-cloud-directives",name:"Donder Cloud Directives",description:"A custom card for managing directives"});class gt extends ot{constructor(){super(...arguments),this.directives=[],this.dialog=null}static async getConfigElement(){return document.createElement("donder-cloud-directives-editor")}static getStubConfig(){return{}}setConfig(t){if(!t)throw new Error("Invalid configuration");this.config=Object.assign(Object.assign({},t),{name:"Donder Cloud Directives",entity:"sensor.donder_directives"})}shouldUpdate(t){return!!this.config&&(this._hasConfigOrEntityChanged(this,t,!1)||vt(this,t,!1))}_hasConfigOrEntityChanged(t,e,i){if(e.has("config")||i)return!0;const s=e.get("hass");if(s&&this.config.entity){return s.states[this.config.entity].state!==t.hass.states[this.config.entity].state}return!1}_showWarning(t){return T`
       <hui-warning>${t}</hui-warning>
     `}_showError(t){const e=document.createElement("hui-error-card");return e.setConfig({type:"error",error:t,origConfig:this.config}),T`
       ${e}

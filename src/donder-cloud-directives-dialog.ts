@@ -657,6 +657,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
                   <div class="conversation-container">
                     <div class="message-list">
+                      ${console.log(this.selectedDirective)}
                       ${this.selectedDirective.messages?.map(message => html`
                         <div class="message ${message.role}">
                           ${message.content.type === 'question' ? html`
@@ -691,7 +692,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       />
                       <ha-button
                         @click=${() => this._sendMessage()}
-                        ?disabled=${!this.conversationInput.trim() || this.isSendingMessage}
+                        ?disabled=${this.isSendingMessage}
                       >
                         ${this.isSendingMessage ? html`
                           <ha-icon icon="mdi:loading" class="rotating-icon"></ha-icon>
