@@ -21,6 +21,17 @@ interface Directive {
   discovery: boolean;
   follow_up: string | null;
   review_summary: string | null;
+  messages?: Array<{
+    role: 'user' | 'assistant';
+    content: {
+      type?: string;
+      answer?: string;
+      request?: any;
+      updated_directive?: string;
+      created_at?: string;
+    };
+    created_at: string;
+  }>;
 }
 
 interface DirectiveResponse {
@@ -40,6 +51,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() isCreating = false;
   @state() private selectedDirective: Directive | null = null;
   @state() private showDetailsView = false;
+  @state() private conversationInput = '';
+  @state() private isSendingMessage = false;
 
   private newDirectiveMessage = '';
   private _isRendered = false;
@@ -221,6 +234,48 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
+  private async _loadConversation(directiveId: string): Promise<void> {
+    try {
+      const response = await this.hass.callWS<{success: boolean; messages: any[]}>({
+        type: "donder_cloud/get_conversation",
+        directive_id: directiveId,
+      });
+      
+      if (response.success && this.selectedDirective) {
+        this.selectedDirective.messages = response.messages;
+        this.requestUpdate();
+      }
+    } catch (err) {
+      console.error("Error loading conversation:", err);
+      this._showNotification("Error loading conversation", "error");
+    }
+  }
+
+  private async _sendMessage(): Promise<void> {
+    if (!this.selectedDirective || !this.conversationInput.trim() || this.isSendingMessage) {
+      return;
+    }
+
+    try {
+      this.isSendingMessage = true;
+      const response = await this.hass.callWS<{success: boolean; answer?: string; request?: any; updated_directive?: string}>({
+        type: "donder_cloud/send_conversation_message",
+        directive_id: this.selectedDirective.id,
+        prompt: this.conversationInput.trim(),
+      });
+
+      if (response.success) {
+        this.conversationInput = '';
+        await this._loadConversation(this.selectedDirective.id);
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      this._showNotification("Error sending message", "error");
+    } finally {
+      this.isSendingMessage = false;
+    }
+  }
+
   static get styles(): CSSResultGroup {
     return css`
       :host {
@@ -340,6 +395,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .new-directive-input {
         padding: var(--spacing);
       }
+      .new-directive.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
       .confirm-delete {
         display: flex;
         gap: 10px;
@@ -377,6 +436,62 @@ export class DonderCloudDirectivesDialog extends LitElement {
       }
       .muted {
         color: var(--secondary-text-color);
+      }
+      .conversation-container {
+        margin-top: 20px;
+        border-top: 1px solid var(--divider-color);
+        padding-top: 16px;
+      }
+
+      .message-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 16px;
+      }
+
+      .message {
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 80%;
+      }
+
+      .message.user {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+        margin-left: auto;
+      }
+
+      .message.assistant {
+        background-color: var(--secondary-background-color);
+        margin-right: auto;
+      }
+
+      .message-time {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
+      }
+
+      .conversation-input {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .conversation-input input {
+        flex-grow: 1;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+      }
+
+      .conversation-input button {
+        min-width: 80px;
+      }
+
+      .conversation-input button:disabled {
+        opacity: 0.5;
       }
     `;
   }
@@ -442,7 +557,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       ></ha-icon>
                     </div>
                     <div class="directive-message">
-                      ${directive.message}  
+                      ${directive.title}  
                       <ha-icon icon="mdi:chevron-right" class="message-icon"></ha-icon>
                     </div>                    
                   </div>
@@ -476,7 +591,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       ></ha-icon>
                     </div>
                     <div class="directive-message">
-                      ${directive.message}  
+                      ${directive.title}  
                     </div>                    
                   </div>
                   <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
@@ -512,7 +627,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 </div>
                 <div class="directive-detail-content">
                   <div class="detail-item">
-                    <div class="detail-label">Message</div>
+                    <div class="detail-label">Automation</div>
                     <div class="detail-value">${this.selectedDirective.title}</div>
                   </div>
                   <div class="detail-item">
@@ -539,6 +654,51 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       <div class="detail-value">${this.selectedDirective.review_summary}</div>
                     </div>
                   ` : ''}
+
+                  <div class="conversation-container">
+                    <div class="message-list">
+                      ${this.selectedDirective.messages?.map(message => html`
+                        <div class="message ${message.role}">
+                          ${message.content.type === 'question' ? html`
+                            <div>${message.content.answer}</div>
+                          ` : message.content.type === 'request' ? html`
+                            <div>${message.content.request}</div>
+                          ` : html`
+                            <div>${message.content.answer || JSON.stringify(message.content)}</div>
+                          `}
+                          <div class="message-time">
+                            ${new Date(message.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                      `)}
+                    </div>
+                    <div class="conversation-input">
+                      <input
+                        type="text"
+                        .value=${this.conversationInput}
+                        @input=${(e: Event) => {
+                          const input = e.target as HTMLInputElement;
+                          this.conversationInput = input.value;
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this._sendMessage();
+                          }
+                        }}
+                        placeholder="Type your message..."
+                        ?disabled=${this.isSendingMessage}
+                      />
+                      <ha-button
+                        @click=${() => this._sendMessage()}
+                        ?disabled=${!this.conversationInput.trim() || this.isSendingMessage}
+                      >
+                        ${this.isSendingMessage ? html`
+                          <ha-icon icon="mdi:loading" class="rotating-icon"></ha-icon>
+                        ` : 'Send'}
+                      </ha-button>
+                    </div>
+                  </div>
                 </div>
               ` : ''}
             </div>
@@ -570,6 +730,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   private _showDirectiveDetails(directive: Directive): void {
     this.selectedDirective = directive;
     this.showDetailsView = true;
+    this._loadConversation(directive.id);
   }
 
   private _hideDirectiveDetails(): void {
