@@ -167,7 +167,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
-  private async _downloadDirective(directiveId: string): Promise<void> {
+  private async _downloadDirective(directiveId: string, message: string): Promise<void> {
     if (this.isDeleting || this.isCreating || this.isDownloading) {
       return;
     }
@@ -177,6 +177,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/dowload_directive",
         directive_id: directiveId,
+        message: message,
       });
       
       if (response.success) {
@@ -337,8 +338,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .chat-title {
         font-size: 12px;
         color: var(--secondary-text-color);
-        margin-bottom: 4px;
-        margin-top: 10px;
+        margin-bottom: 15px;
       }
       .detail-value {
         font-size: 14px;
@@ -574,7 +574,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                     ${this.downloadingDirectiveId === directive.id
                       ? html`
                         <div class="confirm-delete">
-                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this._downloadDirective(directive.id); }} ?disabled=${isLoading}>Confirm</ha-button>
+                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this._downloadDirective(directive.id, directive.message); }} ?disabled=${isLoading}>Confirm</ha-button>
                           <ha-button @click=${(e: Event) => { e.stopPropagation(); this.downloadingDirectiveId = null; }} ?disabled=${isLoading}>Cancel</ha-button>
                         </div>
                       `
