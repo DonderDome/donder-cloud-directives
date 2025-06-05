@@ -23,9 +23,25 @@ import type { DonderCloudDirectivesConfig } from './types';
 interface Directive {
   id: string;
   message: string;
+  title: string;
+  summary: string;
   status: 'success' | 'warning' | 'error';
-  scenario_id: string;
   created_at: string;
+  active: boolean;
+  discovery: boolean;
+  follow_up: string | null;
+  review_summary: string | null;
+  messages?: Array<{
+    role: 'user' | 'assistant';
+    content: {
+      type?: string;
+      answer?: string;
+      request?: any;
+      updated_directive?: string;
+      created_at?: string;
+    };
+    created_at: string;
+  }>;
 }
 
 /* eslint no-console: 0 */

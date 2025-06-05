@@ -15,7 +15,6 @@ interface Directive {
   title: string;
   summary: string;
   status: 'success' | 'warning' | 'error';
-  scenario_id: string;
   created_at: string;
   active: boolean;
   discovery: boolean;
@@ -535,8 +534,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this._isRendered = true;
     const isLoading = this.isDeleting || this.isCreating || this.isDownloading;
 
-    const activeDirectives = this.directives.filter(d => d.discovery === false);
-    const inactiveDirectives = this.directives.filter(d => d.discovery !== true);
+    const activeDirectives = this.directives.filter(d => d.active === true);
+    const discoveredDirectives = this.directives.filter(d => d.discovery === true && d.active === false);
+    // const inactiveDirectives = this.directives.filter(d => d.active === false);
 
     return html`
       <ha-dialog
@@ -547,7 +547,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
           <div class="content">
             <div class="directive-list ${this.showDetailsView ? 'hidden' : ''}">
               <div class="directive-list-subtitle">Suggested Directives</div>
-              ${inactiveDirectives.map(directive => html`
+              ${discoveredDirectives.map(directive => html`
                 <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
                     <div class=${`directive-status-icon ${this.downloadingDirectiveId === directive.id && this.isDownloading ? 'rotating-icon' : ''}`}>
