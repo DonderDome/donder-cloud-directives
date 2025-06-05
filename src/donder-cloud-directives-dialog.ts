@@ -175,7 +175,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     try {
       this.isDownloading = true;
       const response = await this.hass.callWS<DirectiveResponse>({
-        type: "donder_cloud/dowload_directive",
+        type: "donder_cloud/download_directive",
         directive_id: directiveId,
         message: message,
       });
