@@ -28,6 +28,7 @@ interface Directive {
       request?: any;
       updated_directive?: string;
       created_at?: string;
+      user_prompt?: string;
     };
     created_at: string;
   }>;
@@ -333,6 +334,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
         color: var(--secondary-text-color);
         margin-bottom: 4px;
       }
+      .chat-title {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        margin-top: 10px;
+      }
       .detail-value {
         font-size: 14px;
         color: var(--primary-text-color);
@@ -440,11 +447,13 @@ export class DonderCloudDirectivesDialog extends LitElement {
         margin-top: 20px;
         border-top: 1px solid var(--divider-color);
         padding-top: 16px;
+        padding-bottom: 40px;
+        width: 110%;
       }
 
       .message-list {
-        max-height: 300px;
-        overflow-y: auto;
+        /* max-height: 300px;
+        overflow-y: auto; */
         margin-bottom: 16px;
       }
 
@@ -632,12 +641,13 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   </div>
                   <div class="detail-item">
                     <div class="detail-label">Status</div>
-                    <div class="detail-value">${this.selectedDirective.status}</div>
+                    <div class="detail-value">${this.selectedDirective.discovery ? `Suggested - ${this.selectedDirective.active ? 'Active' : 'Inactive'}` : `${this.selectedDirective.active ? 'Active' : 'Inactive'}`}</div>
                   </div>
-                  <div class="detail-item">
+                  <!-- Make this super small under the title -->
+                  <!-- <div class="detail-item">
                     <div class="detail-label">Created At</div>
                     <div class="detail-value">${new Date(this.selectedDirective.created_at).toLocaleString()}</div>
-                  </div>
+                  </div> -->
                   <div class="detail-item">
                     <div class="detail-label">Summary</div>
                     <div class="detail-value">${this.selectedDirective.summary}</div>
@@ -656,8 +666,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   ` : ''}
 
                   <div class="conversation-container">
+                    <div class="chat-title">AI Chat</div>
                     <div class="message-list">
-                      ${console.log(this.selectedDirective)}
                       ${this.selectedDirective.messages?.map(message => html`
                         <div class="message ${message.role}">
                           ${message.content.type === 'question' ? html`
@@ -665,11 +675,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
                           ` : message.content.type === 'request' ? html`
                             <div>${message.content.request}</div>
                           ` : html`
-                            <div>${message.content.answer || JSON.stringify(message.content)}</div>
+                            <div>${message.content.user_prompt}</div>
                           `}
-                          <div class="message-time">
-                            ${new Date(message.created_at).toLocaleString()}
-                          </div>
                         </div>
                       `)}
                     </div>
@@ -687,7 +694,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                             this._sendMessage();
                           }
                         }}
-                        placeholder="Type your message..."
+                        placeholder="Ask me for changes or clarifications on the directive..."
                         ?disabled=${this.isSendingMessage}
                       />
                       <ha-button

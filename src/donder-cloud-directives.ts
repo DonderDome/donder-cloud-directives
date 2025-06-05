@@ -39,6 +39,7 @@ interface Directive {
       request?: any;
       updated_directive?: string;
       created_at?: string;
+      user_prompt?: string;
     };
     created_at: string;
   }>;
