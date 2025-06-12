@@ -135,9 +135,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
     const callback = (response: any) => {
       console.log("--- RESPONSE", response);
-        if (response.type === 'event' && response.event.type === 'progress') {
-            this.creationStage = response.event.stage;
-            this.creationProgressMessage = response.event.stage_message;
+        if (response.type === 'progress') {
+            this.creationStage = response.stage;
+            this.creationProgressMessage = response.stage_message;
         } else if (response.type === 'result') {
             if (this._unsubCreate) {
                 this._unsubCreate();
@@ -459,7 +459,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
         color: var(--secondary-text-color);
       }
       .create-directive-button {
-        flex: 0 1 70px;
+        flex: 0 1 40px;
+        margin-left: 20px;
       }
       .message-icon {
         margin-left: 10px;
@@ -525,6 +526,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
       .conversation-input button:disabled {
         opacity: 0.5;
+      }
+      .creation-progress-message {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-top: 10px;
+        font-style: italic;
       }
     `;
   }
@@ -755,7 +762,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 }
               </div>
             </div>
-            <span>${this.creationProgressMessage}</span>
+            <div class="creation-progress-message">${this.creationProgressMessage}</div>
           </div>
         </ha-dialog>
     `;
