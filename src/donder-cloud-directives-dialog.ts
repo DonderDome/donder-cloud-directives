@@ -138,7 +138,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
         if (response.type === 'progress') {
             this.creationStage = response.stage;
             this.creationProgressMessage = response.stage_message;
-        } else if (response.type === 'result') {
+        } else if (response.type === 'completed') {
             if (this._unsubCreate) {
                 this._unsubCreate();
                 this._unsubCreate = undefined;
@@ -164,7 +164,27 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this.hass.connection.subscribeMessage(callback, message)
       .then(unsub => {
           this._unsubCreate = unsub;
-      });
+      })
+      .catch(error => {
+        console.log("--- ERROR (from .catch)", error);
+        if (this._unsubCreate) {
+            this._unsubCreate();
+            this._unsubCreate = undefined;
+        }
+
+        this.isCreating = false;
+        this.creationProgressMessage = '';
+        this.creationStage = '';
+
+        const errorCode = error?.code;
+        const errorMessage = error?.message || "An unknown error occurred.";
+        
+        if (errorCode === 'timeout') {
+            this._showNotification("Directive creation timed out. Please try again.", "error");
+        } else {
+            this._showNotification(`Error: ${errorMessage}`, "error");
+        }
+    });
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
