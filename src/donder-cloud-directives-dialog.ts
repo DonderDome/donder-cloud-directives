@@ -134,6 +134,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     };
 
     const callback = (response: any) => {
+      console.log("--- RESPONSE", response);
         if (response.type === 'event' && response.event.type === 'progress') {
             this.creationStage = response.event.stage;
             this.creationProgressMessage = response.event.stage_message;
