@@ -49,12 +49,15 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() isDeleting = false;
   @state() isDownloading = false;
   @state() isCreating = false;
+  @state() private creationProgressMessage = '';
+  @state() private creationStage = '';
   @state() private selectedDirective: Directive | null = null;
   @state() private showDetailsView = false;
   @state() private conversationInput = '';
   @state() private isSendingMessage = false;
 
   private newDirectiveMessage = '';
+  private _unsubCreate?: () => void;
   private _isRendered = false;
 
   public setConfig(hass: HomeAssistant, directives: Directive[]): void {
@@ -111,7 +114,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
-  private async _createDirective(): Promise<void> {
+  private _createDirective(): void {
     if (this.isDeleting || this.isCreating || this.isDownloading) {
       return;
     }
@@ -121,25 +124,46 @@ export class DonderCloudDirectivesDialog extends LitElement {
       return;
     }
 
-    try {
-      this.isCreating = true;
-      const response = await this.hass.callWS<DirectiveResponse>({
+    this.isCreating = true;
+    this.creationProgressMessage = 'Initializing...';
+    this.creationStage = 'initializing';
+
+    const message = {
         type: "donder_cloud/create_directive",
         message: this.newDirectiveMessage.trim(),
+    };
+
+    const callback = (response: any) => {
+        if (response.type === 'event' && response.event.type === 'progress') {
+            this.creationStage = response.event.stage;
+            this.creationProgressMessage = response.event.stage_message;
+        } else if (response.type === 'result') {
+            if (this._unsubCreate) {
+                this._unsubCreate();
+                this._unsubCreate = undefined;
+            }
+            
+            this.isCreating = false;
+            this.creationProgressMessage = '';
+            this.creationStage = '';
+
+            if (response.success) {
+                this.directives = response.result.directives;
+                this.newDirectiveMessage = '';
+                this._showNotification("Directive created successfully", "success");
+                this._propagateVisionSync();
+            } else {
+                const errorMessage = response.error?.message || "An unknown error occurred.";
+                console.error("Error creating directive:", errorMessage);
+                this._showNotification(`Error: ${errorMessage}`, "error");
+            }
+        }
+    };
+
+    this.hass.connection.subscribeMessage(callback, message)
+      .then(unsub => {
+          this._unsubCreate = unsub;
       });
-      
-      if (response.success) {
-        this.isCreating = false;
-        this.directives = response.directives;
-        this.newDirectiveMessage = '';
-        this._showNotification("Directive created successfully", "success");
-        this._propagateVisionSync();
-      }
-    } catch (err) {
-      console.error("Error creating directive:", err);
-      this.isCreating = false;
-      this._showNotification("Error creating directive", "error");
-    }
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
@@ -730,6 +754,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 }
               </div>
             </div>
+            <span>${this.creationProgressMessage}</span>
           </div>
         </ha-dialog>
     `;
