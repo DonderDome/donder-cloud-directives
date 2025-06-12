@@ -124,7 +124,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     try {
       this.isCreating = true;
       const response = await this.hass.callWS<DirectiveResponse>({
-        type: "donder_cloud/create_directive_streaming",
+        type: "donder_cloud/create_directive",
         message: this.newDirectiveMessage.trim(),
       });
       
