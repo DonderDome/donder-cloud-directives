@@ -50,6 +50,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() isDownloading = false;
   @state() isCreating = false;
   @state() private creationProgressMessage = '';
+  @state() private _previousCreationProgressMessage = '';
+  @state() private _stageChanged = false;
   @state() private creationStage = '';
   @state() private selectedDirective: Directive | null = null;
   @state() private showDetailsView = false;
@@ -136,6 +138,11 @@ export class DonderCloudDirectivesDialog extends LitElement {
     const callback = (response: any) => {
       console.log("--- RESPONSE", response);
         if (response.type === 'progress') {
+            if (this.creationProgressMessage !== response.stage_message) {
+              this._previousCreationProgressMessage = this.creationProgressMessage;
+              this._stageChanged = true;
+              setTimeout(() => { this._stageChanged = false; }, 250);
+            }
             this.creationStage = response.stage;
             this.creationProgressMessage = response.stage_message;
         } else if (response.type === 'completed') {
@@ -547,11 +554,43 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .conversation-input button:disabled {
         opacity: 0.5;
       }
-      .creation-progress-message {
+      .creation-progress-container {
+        position: relative;
+        height: 20px;
+        margin-top: 10px;
+      }
+      .creation-progress-message.animated {
+        position: absolute;
+        width: 100%;
         font-size: 12px;
         color: var(--secondary-text-color);
-        margin-top: 10px;
         font-style: italic;
+      }
+      .creation-progress-message.old {
+        animation: fadeOutUp 0.25s forwards;
+      }
+      .creation-progress-message.new {
+        animation: fadeInDown 0.25s forwards;
+      }
+      @keyframes fadeOutUp {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     `;
   }
@@ -782,7 +821,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 }
               </div>
             </div>
-            <div class="creation-progress-message">${this.creationProgressMessage}</div>
+            <div class="creation-progress-container">
+              ${this._stageChanged ? html`
+                <div class="creation-progress-message animated old">${this._previousCreationProgressMessage}</div>
+              ` : ''}
+              <div class="creation-progress-message animated ${this._stageChanged ? 'new' : ''}">${this.creationProgressMessage}</div>
+            </div>
           </div>
         </ha-dialog>
     `;
