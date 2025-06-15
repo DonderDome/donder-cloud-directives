@@ -71,6 +71,13 @@ export class DonderCloudDirectives extends LitElement {
   @state() public hass!: HomeAssistant;
   @state() private config!: DonderCloudDirectivesConfig;
   @state() private directives: Directive[] = [];
+  @state() private creating: any = null;
+  @state() private deleting: any = null;
+  @state() private downloading: any = null;
+  @state() private creation_stage = '';
+  @state() private creation_message = '';
+  @state() private error = '';
+  @state() private conversations: string[] = [];
   private dialog: DonderCloudDirectivesDialog | null = null;
   public setConfig(config: DonderCloudDirectivesConfig): void {
     if (!config) {
@@ -140,7 +147,17 @@ export class DonderCloudDirectives extends LitElement {
 
   private _openDialog(): void {
     this.dialog = new DonderCloudDirectivesDialog();
-    this.dialog.setConfig(this.hass, this.directives);
+    this.dialog.setConfig(
+      this.hass,
+      this.directives,
+      this.creating,
+      this.deleting,
+      this.downloading,
+      this.creation_stage,
+      this.creation_message,
+      this.error,
+      this.conversations
+    );
     this.dialog.show();
   }
 
@@ -216,9 +233,26 @@ export class DonderCloudDirectives extends LitElement {
     const sensor = this.hass.states[this.config.entity];
     if (sensor && sensor.attributes.directives) {
       this.directives = sensor.attributes.directives;
+      this.creating = sensor.attributes.creating;
+      this.deleting = sensor.attributes.deleting;
+      this.downloading = sensor.attributes.downloading;
+      this.creation_stage = sensor.attributes.creation_stage;
+      this.creation_message = sensor.attributes.creation_message;
+      this.error = sensor.attributes.error;
+      this.conversations = sensor.attributes.conversations;
 
       if (this.dialog) {
-        this.dialog.setConfig(this.hass, this.directives);
+        this.dialog.setConfig(
+          this.hass,
+          this.directives,
+          this.creating,
+          this.deleting,
+          this.downloading,
+          this.creation_stage,
+          this.creation_message,
+          this.error,
+          this.conversations
+        );
       }
     }
   }

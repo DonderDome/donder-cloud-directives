@@ -44,11 +44,18 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() public hass!: HomeAssistant;
   @state() private config!: DonderCloudDirectivesConfig;
   @state() private directives: Directive[] = [];
-  @state() deletingDirectiveId: string | null = null;
-  @state() downloadingDirectiveId: string | null = null;
-  @state() isDeleting = false;
-  @state() isDownloading = false;
-  @state() isCreating = false;
+  @state() private creating: any = null;
+  @state() private deleting: any = null;
+  @state() private downloading: any = null;
+  @state() private creation_stage = '';
+  @state() private creation_message = '';
+  @state() private error = '';
+  @state() private conversations: string[] = [];
+  // @state() deletingDirectiveId: string | null = null;
+  // @state() downloadingDirectiveId: string | null = null;
+  // @state() isDeleting = false;
+  // @state() isDownloading = false;
+  // @state() isCreating = false;
   @state() private creationProgressMessage = '';
   @state() private _previousCreationProgressMessage = '';
   @state() private _stageChanged = false;
@@ -62,7 +69,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   private _unsubCreate?: () => void;
   private _isRendered = false;
 
-  public setConfig(hass: HomeAssistant, directives: Directive[]): void {
+  public setConfig(hass: HomeAssistant, directives: Directive[], creating: any, deleting: any, downloading: any, creation_stage: string, creation_message: string, error: string, conversations: string[]): void {
     this.config = {
       type: 'donder-cloud-directives-dialog',
       name: 'Donder Cloud Directives',
@@ -71,9 +78,19 @@ export class DonderCloudDirectivesDialog extends LitElement {
     
     this.hass = hass;
     this.directives = directives;
+    this.creating = creating;
+    this.deleting = deleting;
+    this.downloading = downloading;
+    this.creation_stage = creation_stage;
+    this.creation_message = creation_message;
+    this.error = error;
+    this.conversations = conversations;
+
+    console.log("--- set config", directives, creating, deleting, downloading, creation_stage, creation_message, error, conversations);
   }
 
   protected shouldUpdate(changedProps: any): boolean {
+    console.log("--- shouldUpdate", this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false));
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
@@ -117,7 +134,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private _createDirective(): void {
-    if (this.isDeleting || this.isCreating || this.isDownloading) {
+    if (this.deleting || this.creating || this.downloading) {
       return;
     }
 
@@ -126,106 +143,108 @@ export class DonderCloudDirectivesDialog extends LitElement {
       return;
     }
 
-    this.isCreating = true;
-    this.creationProgressMessage = 'Initializing...';
-    this.creationStage = 'initializing';
+    // this.isCreating = true;
+    // this.creationProgressMessage = 'Initializing...';
+    // this.creationStage = 'initializing';
 
-    const message = {
-        type: "donder_cloud/create_directive",
-        message: this.newDirectiveMessage.trim(),
-    };
+    // const message = {
+    //     type: "donder_cloud/create_directive",
+    //     message: this.newDirectiveMessage.trim(),
+    // };
 
-    const callback = (response: any) => {
-      console.log("--- RESPONSE", response);
-        if (response.type === 'progress') {
-            if (this.creationProgressMessage !== response.stage_message) {
-              this._previousCreationProgressMessage = this.creationProgressMessage;
-              this._stageChanged = true;
-              setTimeout(() => { this._stageChanged = false; }, 250);
-            }
-            this.creationStage = response.stage;
-            this.creationProgressMessage = response.stage_message;
-        } else if (response.type === 'completed') {
-            if (this._unsubCreate) {
-                this._unsubCreate();
-                this._unsubCreate = undefined;
-            }
-            
-            this.isCreating = false;
-            this.creationProgressMessage = '';
-            this.creationStage = '';
-
-            if (response.success) {
-                this.directives = response.result.directives;
-                this.newDirectiveMessage = '';
-                this._showNotification("Directive created successfully", "success");
-                this._propagateVisionSync();
-            } else {
-                const errorMessage = response.error?.message || "An unknown error occurred.";
-                console.error("Error creating directive:", errorMessage);
-                this._showNotification(`Error: ${errorMessage}`, "error");
-            }
-        }
-    };
-
-    this.hass.connection.subscribeMessage(callback, message)
-      .then(unsub => {
-          this._unsubCreate = unsub;
-      })
-      .catch(error => {
-        console.log("--- ERROR (from .catch)", error);
-        if (this._unsubCreate) {
-            this._unsubCreate();
-            this._unsubCreate = undefined;
-        }
-
-        this.isCreating = false;
-        this.creationProgressMessage = '';
-        this.creationStage = '';
-
-        const errorCode = error?.code;
-        const errorMessage = error?.message || "An unknown error occurred.";
-        
-        if (errorCode === 'timeout') {
-            this._showNotification("Directive creation timed out. Please try again.", "error");
-        } else {
-            this._showNotification(`Error: ${errorMessage}`, "error");
-        }
+    const response = this.hass.callWS<DirectiveResponse>({
+      type: "donder_cloud/create_directive",
+      message: this.newDirectiveMessage.trim(),
     });
+
+    console.log("--- RESPONSE", response);
+
+    // const callback = (response: any) => {
+    //   console.log("--- RESPONSE", response);
+    //     if (response.type === 'progress') {
+    //         if (this.creationProgressMessage !== response.stage_message) {
+    //           this._previousCreationProgressMessage = this.creationProgressMessage;
+    //           this._stageChanged = true;
+    //           setTimeout(() => { this._stageChanged = false; }, 250);
+    //         }
+    //         this.creationStage = response.stage;
+    //         this.creationProgressMessage = response.stage_message;
+    //     } else if (response.type === 'completed') {
+    //         if (this._unsubCreate) {
+    //             this._unsubCreate();
+    //             this._unsubCreate = undefined;
+    //         }
+            
+    //         this.isCreating = false;
+    //         this.creationProgressMessage = '';
+    //         this.creationStage = '';
+
+    //         if (response.success) {
+    //             this.directives = response.result.directives;
+    //             this.newDirectiveMessage = '';
+    //             this._showNotification("Directive created successfully", "success");
+    //             this._propagateVisionSync();
+    //         } else {
+    //             const errorMessage = response.error?.message || "An unknown error occurred.";
+    //             console.error("Error creating directive:", errorMessage);
+    //             this._showNotification(`Error: ${errorMessage}`, "error");
+    //         }
+    //     }
+    // };
+
+    // this.hass.connection.subscribeMessage(callback, message)
+    //   .then(unsub => {
+    //       this._unsubCreate = unsub;
+    //   })
+    //   .catch(error => {
+    //     console.log("--- ERROR (from .catch)", error);
+    //     if (this._unsubCreate) {
+    //         this._unsubCreate();
+    //         this._unsubCreate = undefined;
+    //     }
+
+    //     this.isCreating = false;
+    //     this.creationProgressMessage = '';
+    //     this.creationStage = '';
+
+    //     const errorCode = error?.code;
+    //     const errorMessage = error?.message || "An unknown error occurred.";
+        
+    //     if (errorCode === 'timeout') {
+    //         this._showNotification("Directive creation timed out. Please try again.", "error");
+    //     } else {
+    //         this._showNotification(`Error: ${errorMessage}`, "error");
+    //     }
+    // });
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
-    if (this.isDeleting || this.isCreating || this.isDownloading) {
+    if (this.deleting || this.creating || this.downloading) {
       return;
     }
 
     try {
-      this.isDeleting = true;
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/delete_directive",
         directive_id: directiveId,
       });
       
       if (response.success) {
-        this.deletingDirectiveId = null;
         this._showNotification("Directive deleted successfully", "success");
-        this.isDeleting = false;
         this._propagateVisionSync();
       }
     } catch (err) {
       console.error("Error deleting directive:", err);
       this._showNotification("Error deleting directive", "error");
-      this.isDeleting = false;
     }
   }
 
   private async _downloadDirective(directiveId: string, message: string): Promise<void> {
-    if (this.isDeleting || this.isCreating || this.isDownloading) {
+    if (this.deleting || this.creating || this.downloading) {
       return;
     }
 
     try {
-      this.isDownloading = true;
       const response = await this.hass.callWS<DirectiveResponse>({
         type: "donder_cloud/download_directive",
         directive_id: directiveId,
@@ -233,14 +252,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
       });
       
       if (response.success) {
-        this.isDownloading = false;
         this.directives = response.directives;
         this._showNotification("Directive downloaded successfully", "success");
         this._propagateVisionSync();
       }
     } catch (err) {
       console.error("Error downloading directive:", err);
-      this.isDownloading = false;
       this._showNotification("Error downloading directive", "error");
     }
   }
@@ -254,11 +271,11 @@ export class DonderCloudDirectivesDialog extends LitElement {
   }
 
   private _getStatusIcon(status: string, directiveId: string, active: boolean): string {
-    if (this.deletingDirectiveId === directiveId && this.isDeleting) {
+    if (this.deleting === directiveId) {
       return 'mdi:loading';
     }
 
-    if (this.downloadingDirectiveId === directiveId && this.isDownloading) {
+    if (this.downloading === directiveId) {
       return 'mdi:loading';
     }
 
@@ -632,7 +649,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
   protected render(): TemplateResult {
     this._isRendered = true;
-    const isLoading = this.isDeleting || this.isCreating || this.isDownloading;
+    const isLoading = this.creating || this.deleting || this.downloading;
 
     const activeDirectives = this.directives.filter(d => d.active === true);
     const discoveredDirectives = this.directives.filter(d => d.discovery === true && d.active === false);
@@ -650,7 +667,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
               ${discoveredDirectives.map(directive => html`
                 <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
-                    <div class=${`directive-status-icon ${this.downloadingDirectiveId === directive.id && this.isDownloading ? 'rotating-icon' : ''}`}>
+                    <div class=${`directive-status-icon ${this.downloading === directive.id ? 'rotating-icon' : ''}`}>
                       <ha-icon
                         icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
                         class=${this._getStatusClass(directive.status)}
@@ -661,16 +678,16 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       <ha-icon icon="mdi:chevron-right" class="message-icon"></ha-icon>
                     </div>                    
                   </div>
-                  <div class="directive-actions ${this.downloadingDirectiveId === directive.id ? 'expanded' : ''}">
-                    ${this.downloadingDirectiveId === directive.id
+                  <div class="directive-actions ${this.downloading === directive.id ? 'expanded' : ''}">
+                    ${this.downloading === directive.id
                       ? html`
                         <div class="confirm-delete">
                           <ha-button @click=${(e: Event) => { e.stopPropagation(); this._downloadDirective(directive.id, directive.message); }} ?disabled=${isLoading}>Confirm</ha-button>
-                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this.downloadingDirectiveId = null; }} ?disabled=${isLoading}>Cancel</ha-button>
+                          <ha-button ?disabled=${isLoading}>Cancel</ha-button>
                         </div>
                       `
                       : html`
-                        <ha-button @click=${(e: Event) => { e.stopPropagation(); this.downloadingDirectiveId = directive.id; }} ?disabled=${isLoading}>
+                        <ha-button ?disabled=${isLoading}>
                           <ha-icon icon="mdi:cloud-download-outline" class="download-icon is-loading"></ha-icon>
                         </ha-button>
                       `
@@ -684,7 +701,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
               ${activeDirectives.map(directive => html`
                 <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
-                    <div class=${`directive-status-icon ${this.deletingDirectiveId === directive.id && this.isDeleting ? 'rotating-icon' : ''}`}>
+                    <div class=${`directive-status-icon ${this.deleting === directive.id ? 'rotating-icon' : ''}`}>
                       <ha-icon
                         icon=${this._getStatusIcon(directive.status, directive.id, directive.active)}
                         class=${this._getStatusClass(directive.status)}
@@ -694,16 +711,16 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       ${directive.title}  
                     </div>                    
                   </div>
-                  <div class="directive-actions ${this.deletingDirectiveId === directive.id ? 'expanded' : ''}">
-                    ${this.deletingDirectiveId === directive.id
+                  <div class="directive-actions ${this.deleting === directive.id ? 'expanded' : ''}">
+                    ${this.deleting === directive.id
                       ? html`
                         <div class="confirm-delete">
                           <ha-button @click=${(e: Event) => { e.stopPropagation(); this._deleteDirective(directive.id); }} ?disabled=${isLoading}>Confirm</ha-button>
-                          <ha-button @click=${(e: Event) => { e.stopPropagation(); this.deletingDirectiveId = null; }} ?disabled=${isLoading}>Cancel</ha-button>
+                          <ha-button ?disabled=${isLoading}>Cancel</ha-button>
                         </div>
                       `
                       : html`
-                        <ha-button @click=${(e: Event) => { e.stopPropagation(); this.deletingDirectiveId = directive.id; }} ?disabled=${isLoading}>
+                        <ha-button ?disabled=${isLoading}>
                           <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
                         </ha-button>
                       `
@@ -814,8 +831,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 placeholder="Enter new directive..."
                 ?disabled=${isLoading}
               />
-              <div class=${`create-directive-button ${this.isCreating ? 'rotating-icon' : ''}`}>
-                ${this.isCreating
+              <div class=${`create-directive-button ${this.creating ? 'rotating-icon' : ''}`}>
+                ${this.creating
                   ? html`<ha-icon icon="mdi:loading" class="rotating-icon"></ha-icon>`
                   : html`<ha-button @click=${() => this._createDirective()} ?disabled=${isLoading}>Create</ha-button>`
                 }
