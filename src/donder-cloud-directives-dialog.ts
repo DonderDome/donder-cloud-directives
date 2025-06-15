@@ -652,7 +652,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this._isRendered = true;
     const isLoading = this.creating || this.deleting || this.downloading;
 
-    const activeDirectives = this.directives.filter(d => d.active === true);
+    const userDirectives = this.directives.filter(d => d.discovery === false);
     const discoveredDirectives = this.directives.filter(d => d.discovery === true && d.active === false);
     // const inactiveDirectives = this.directives.filter(d => d.active === false);
 
@@ -699,7 +699,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
             </div>
             <div class="directive-list ${this.showDetailsView ? 'hidden' : ''}">
               <div class="directive-list-subtitle">Active Directives</div>
-              ${activeDirectives.map(directive => html`
+              ${userDirectives.map(directive => html`
                 <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
                     <div class=${`directive-status-icon ${this.deleting === directive.id ? 'rotating-icon' : ''}`}>
@@ -729,7 +729,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                   </div>
                 </div>
               `)}
-              ${activeDirectives.length === 0 ? html`
+              ${userDirectives.length === 0 ? html`
                 <div class="directive-item">
                   <div class="directive-content">
                     <div class="directive-message muted">No active directives</div>
