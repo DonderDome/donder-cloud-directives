@@ -132,7 +132,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
     }
   }
 
-  private _createDirective(): void {
+  private async _createDirective(): Promise<void> {
     if (this.deleting || this.creating || this.downloading) {
       return;
     }
@@ -142,79 +142,19 @@ export class DonderCloudDirectivesDialog extends LitElement {
       return;
     }
 
-    // this.isCreating = true;
-    // this.creationProgressMessage = 'Initializing...';
-    // this.creationStage = 'initializing';
-
-    // const message = {
-    //     type: "donder_cloud/create_directive",
-    //     message: this.newDirectiveMessage.trim(),
-    // };
-
-    const response = this.hass.callWS<DirectiveResponse>({
-      type: "donder_cloud/create_directive",
-      message: this.newDirectiveMessage.trim(),
-    });
-
-    console.log("--- RESPONSE", response);
-
-    // const callback = (response: any) => {
-    //   console.log("--- RESPONSE", response);
-    //     if (response.type === 'progress') {
-    //         if (this.creationProgressMessage !== response.stage_message) {
-    //           this._previousCreationProgressMessage = this.creationProgressMessage;
-    //           this._stageChanged = true;
-    //           setTimeout(() => { this._stageChanged = false; }, 250);
-    //         }
-    //         this.creationStage = response.stage;
-    //         this.creationProgressMessage = response.stage_message;
-    //     } else if (response.type === 'completed') {
-    //         if (this._unsubCreate) {
-    //             this._unsubCreate();
-    //             this._unsubCreate = undefined;
-    //         }
-            
-    //         this.isCreating = false;
-    //         this.creationProgressMessage = '';
-    //         this.creationStage = '';
-
-    //         if (response.success) {
-    //             this.directives = response.result.directives;
-    //             this.newDirectiveMessage = '';
-    //             this._showNotification("Directive created successfully", "success");
-    //             this._propagateVisionSync();
-    //         } else {
-    //             const errorMessage = response.error?.message || "An unknown error occurred.";
-    //             console.error("Error creating directive:", errorMessage);
-    //             this._showNotification(`Error: ${errorMessage}`, "error");
-    //         }
-    //     }
-    // };
-
-    // this.hass.connection.subscribeMessage(callback, message)
-    //   .then(unsub => {
-    //       this._unsubCreate = unsub;
-    //   })
-    //   .catch(error => {
-    //     console.log("--- ERROR (from .catch)", error);
-    //     if (this._unsubCreate) {
-    //         this._unsubCreate();
-    //         this._unsubCreate = undefined;
-    //     }
-
-    //     this.isCreating = false;
-    //     this.creationProgressMessage = '';
-    //     this.creationStage = '';
-
-    //     const errorCode = error?.code;
-    //     const errorMessage = error?.message || "An unknown error occurred.";
-        
-    //     if (errorCode === 'timeout') {
-    //         this._showNotification("Directive creation timed out. Please try again.", "error");
-    //     } else {
-    //         this._showNotification(`Error: ${errorMessage}`, "error");
-    //     }
-    // });
+    try {
+      const response = await this.hass.callWS<DirectiveResponse>({
+        type: "donder_cloud/create_directive",
+        message: this.newDirectiveMessage.trim(),
+      });
+      if (response.success) {
+        this._showNotification("Directive created successfully", "success");
+        this._propagateVisionSync();
+      }
+    } catch (err) {
+      console.error("Error creating directive:", err);
+      this._showNotification("Error creating directive", "error");
+    }
   }
 
   private async _deleteDirective(directiveId: string): Promise<void> {
@@ -286,6 +226,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
       case 'success':
         return 'mdi:check-all';
       case 'warning':
+        return 'mdi:alert-circle';
+      case 'error':
         return 'mdi:alert-circle';
       default:
         return 'mdi:help-circle';
@@ -591,6 +533,12 @@ export class DonderCloudDirectivesDialog extends LitElement {
       .creation-progress-message.new {
         animation: fadeInDown 0.25s forwards;
       }
+      .error-message {
+        color: var(--error-color);
+        margin-top: 16px;
+        font-size: 12px;
+        font-weight: 600;
+      }
       @keyframes fadeOutUp {
         from {
           opacity: 1;
@@ -655,7 +603,6 @@ export class DonderCloudDirectivesDialog extends LitElement {
 
     const userDirectives = this.directives.filter(d => d.discovery === false);
     const discoveredDirectives = this.directives.filter(d => d.discovery === true && d.active === false);
-    // const inactiveDirectives = this.directives.filter(d => d.active === false);
 
     return html`
       <ha-dialog
@@ -699,7 +646,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
               `)}
             </div>
             <div class="directive-list ${this.showDetailsView ? 'hidden' : ''}">
-              <div class="directive-list-subtitle">Active Directives</div>
+              <div class="directive-list-subtitle">Your Directives</div>
               ${userDirectives.map(directive => html`
                 <div class="directive-item" @click=${() => this._showDirectiveDetails(directive)}>
                   <div class="directive-content">
@@ -840,12 +787,17 @@ export class DonderCloudDirectivesDialog extends LitElement {
                 }
               </div>
             </div>
-            <div class="creation-progress-container">
-              ${this._stageChanged ? html`
-                <div class="creation-progress-message animated old">${this.creation_message_old}</div>
-              ` : ''}
-              <div class="creation-progress-message animated ${this._stageChanged ? 'new' : ''}">${this.creation_message}</div>
-            </div>
+            ${this.creating ? html`
+              <div class="creation-progress-container ${this.showDetailsView ? 'hidden' : ''}">
+                ${this._stageChanged ? html`
+                  <div class="creation-progress-message animated old">${this.creation_message_old}</div>
+                ` : ''}
+                <div class="creation-progress-message animated ${this._stageChanged ? 'new' : ''}">${this.creation_message}</div>
+              </div>
+            ` : ''}
+            ${this.error ? html`
+              <div class="error-message ${this.showDetailsView ? 'hidden' : ''}">${this.error}</div>
+            ` : ''}
           </div>
         </ha-dialog>
     `;
