@@ -64,6 +64,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() private showDetailsView = false;
   @state() private conversationInput = '';
   @state() private isSendingMessage = false;
+  @state() private expandedDirective: any = null;
 
   private newDirectiveMessage = '';
   private _unsubCreate?: () => void;
@@ -711,8 +712,8 @@ export class DonderCloudDirectivesDialog extends LitElement {
                       ${directive.title}  
                     </div>                    
                   </div>
-                  <div class="directive-actions ${this.deleting === directive.id ? 'expanded' : ''}">
-                    ${this.deleting === directive.id
+                  <div class="directive-actions ${this.expandedDirective === directive.id ? 'expanded' : ''}">
+                    ${this.expandedDirective === directive.id
                       ? html`
                         <div class="confirm-delete">
                           <ha-button @click=${(e: Event) => { e.stopPropagation(); this._deleteDirective(directive.id); }} ?disabled=${isLoading}>Confirm</ha-button>
@@ -720,7 +721,7 @@ export class DonderCloudDirectivesDialog extends LitElement {
                         </div>
                       `
                       : html`
-                        <ha-button ?disabled=${isLoading}>
+                        <ha-button @click=${(e: Event) => { e.stopPropagation(); this.expandedDirective = directive.id; }} ?disabled=${isLoading}>
                           <ha-icon icon="mdi:trash-can-outline" class="delete-icon is-loading"></ha-icon>
                         </ha-button>
                       `
