@@ -49,17 +49,10 @@ export class DonderCloudDirectivesDialog extends LitElement {
   @state() private downloading: any = null;
   @state() private creation_stage = '';
   @state() private creation_message = '';
+  @state() private creation_message_old = '';
   @state() private error = '';
   @state() private conversations: string[] = [];
-  // @state() deletingDirectiveId: string | null = null;
-  // @state() downloadingDirectiveId: string | null = null;
-  // @state() isDeleting = false;
-  // @state() isDownloading = false;
-  // @state() isCreating = false;
-  @state() private creationProgressMessage = '';
-  @state() private _previousCreationProgressMessage = '';
   @state() private _stageChanged = false;
-  @state() private creationStage = '';
   @state() private selectedDirective: Directive | null = null;
   @state() private showDetailsView = false;
   @state() private conversationInput = '';
@@ -82,16 +75,21 @@ export class DonderCloudDirectivesDialog extends LitElement {
     this.creating = creating;
     this.deleting = deleting;
     this.downloading = downloading;
-    this.creation_stage = creation_stage;
-    this.creation_message = creation_message;
+    // this.creation_stage = creation_stage;
+    // this.creation_message = creation_message;
     this.error = error;
     this.conversations = conversations;
 
-    console.log("--- set config", directives, creating, deleting, downloading, creation_stage, creation_message, error, conversations);
+    if (this.creation_stage !== creation_stage) {
+      this.creation_message_old = this.creation_message;
+      this.creation_message = creation_message;
+      this.creation_stage = creation_stage;
+      this._stageChanged = true;
+      setTimeout(() => { this._stageChanged = false; }, 250);
+    }
   }
 
   protected shouldUpdate(changedProps: any): boolean {
-    console.log("--- shouldUpdate", this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false));
     return this._hasConfigOrEntityChanged(this, changedProps, false) || hasConfigOrEntityChanged(this, changedProps, false);
   }
 
@@ -355,6 +353,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
         max-width: 600px;
         width: 100%;
         --spacing: 12px;
+      }
+      .content {
+        min-width: 500px;
       }
       .directive-list {
         margin-bottom: 20px;
@@ -841,9 +842,9 @@ export class DonderCloudDirectivesDialog extends LitElement {
             </div>
             <div class="creation-progress-container">
               ${this._stageChanged ? html`
-                <div class="creation-progress-message animated old">${this._previousCreationProgressMessage}</div>
+                <div class="creation-progress-message animated old">${this.creation_message_old}</div>
               ` : ''}
-              <div class="creation-progress-message animated ${this._stageChanged ? 'new' : ''}">${this.creationProgressMessage}</div>
+              <div class="creation-progress-message animated ${this._stageChanged ? 'new' : ''}">${this.creation_message}</div>
             </div>
           </div>
         </ha-dialog>
